@@ -51,40 +51,46 @@ Converts geographic coordinates into a human-readable address.
 }
 ```
 
-Pricing and Licensing
+## Pricing and Licensing
 SimpleGeoAPI operates under the Custom API License Version 1.0. Key highlights include:
 
-Free Tier: Use the API for non-commercial purposes with limited features.
-Commercial Use: Paid plans are required for revenue-generating applications or higher usage limits.
+- **Free Tier**: Use the API for non-commercial purposes with limited features.
+- **Commercial Use**: Paid plans are required for revenue-generating applications or higher usage limits.
 For more details, refer to the License section below.
 
-License
-Custom API License Version 1.0
+## License
+### Custom API License Version 1.0
 By using the SimpleGeoAPI, you agree to the following:
 
-Free Tier:
+### 1. Free Tier:
 
-Access basic features with limited usage.
-Only non-commercial applications are allowed.
-Commercial Use:
+- Access basic features with limited usage.
+- Only non-commercial applications are allowed.
 
-Paid plans are required for commercial or revenue-generating applications.
-Exceeding free tier limits or accessing advanced features requires a subscription.
-Prohibitions:
+### 2. Commercial Use:
 
-No illegal or harmful use.
-No sublicensing, resale, or modification of the API.
-Termination:
+- Paid plans are required for commercial or revenue-generating applications.
+- Exceeding free tier limits or accessing advanced features requires a subscription.
 
-Licensor reserves the right to terminate access for violations.
-Disclaimer:
+### 3. Prohibitions:
 
-The API is provided "as is," with no guarantees of uninterrupted service or accuracy.
+- No illegal or harmful use.
+- No sublicensing, resale, or modification of the API.
+
+### 4. Termination:
+
+- Licensor reserves the right to terminate access for violations.
+
+### 5. Disclaimer:
+
+- The API is provided "as is," with no guarantees of uninterrupted service or accuracy.
+
 For a detailed view of the license, refer to the LICENSE file in this repository or contact us:
 
-Email: harambee_developers@hotmail.com
-Phone: +254 790 821 358
-Contributing
+- **Email**: harambee_developers@hotmail.com
+- **Phone**: +44 790 821 358
+
+## Contributing
 Contributions are welcome! To contribute:
 
 Fork the repository.
@@ -93,5 +99,5 @@ Submit a pull request with a clear description of your changes.
 Contact
 For support or questions, reach out:
 
-Email: harambee_developers@hotmail.com
-Phone: +44 790 821 358
+- **Email**: harambee_developers@hotmail.com
+- **Phone**: +44 790 821 358
