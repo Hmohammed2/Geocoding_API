@@ -1,0 +1,25 @@
+services:
+  geocode_api:
+    container_name: geocode_api
+    build:
+      context: "./backend-api"
+      dockerfile: Dockerfile
+    ports: 
+      - "3000:3000"
+    volumes:
+      - ./backend-api:/app/
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - mongo
+    command: npm run dev
+  mongo:
+    image: mongo:latest
+    container_name: mongo-geocode
+    ports: 
+      - "27018:27017"
+    volumes:
+      - ./mongo_data:/data/db
+volumes:
+  mongo-data:
