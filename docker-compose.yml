@@ -1,4 +1,15 @@
 services:
+  frontend:
+    container_name: frontend-api
+    build:
+      context: "./frontend"
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    command: npm run dev
   geocode_api:
     container_name: geocode_api
     build:
@@ -7,8 +18,8 @@ services:
     ports: 
       - "3000:3000"
     volumes:
-      - ./backend-api:/app/
-      - /app/node_modules
+      - ./backend-api:/app/backend
+      - /app/backend/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
     depends_on:
@@ -21,5 +32,14 @@ services:
       - "27018:27017"
     volumes:
       - ./mongo_data:/data/db
+  stripe:
+    image: stripe/stripe-cli
+    container_name: stripe-cli
+    command: ["listen", "--forward-to", "http://geocode_api:3000/payment/webhook"]
+    volumes:
+      - stripe-cli-config:/root/.config/stripe
+    depends_on:
+      - geocode_api
 volumes:
   mongo-data:
+  stripe-cli-config:

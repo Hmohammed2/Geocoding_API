@@ -5,16 +5,24 @@ const Geocode = require('../models/Geocode')
 const crypto = require('crypto')
 const multer = require('multer');
 const csvParser = require('csv-parser');
+const trackApiUsage = require('../middleware/trackApiUsage')
+const verifyApiKey = require("../middleware/verifyApiKey"); // Adjust the path as needed
+const enforceApiLimit = require('../middleware/enforceApiLimit');
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const router = express.Router()
+
 // Setup multer for file upload
 const upload = multer({ dest: 'uploads/' });
+
+// Middleware
+router.use(trackApiUsage)
+router.use(verifyApiKey)
 
 /**
  * Geocode an address to get its coordinates.
  */
-router.post('/geocode', async (req, res) => {
+router.post('/geocode', enforceApiLimit, async (req, res) => {
     const { address } = req.body;
 
     if (!address) {
@@ -25,12 +33,15 @@ router.post('/geocode', async (req, res) => {
         return res.status(500).json({ error: 'Google API key not configured.' });
     }
 
+    // Step 1: Normalize the address and create a hash
+    const formattedAddress = address.trim().toLowerCase(); // Normalize the address
+    addressHash = crypto.createHash('sha256').update(formattedAddress).digest('hex');
+
+    console.log(formattedAddress, addressHash)
+
     try {
-        // Step 1: Normalize the address and create a hash
-        const formattedAddress = address.trim().toLowerCase(); // Normalize the address
-        const addressHash = crypto.createHash('sha256').update(formattedAddress).digest('hex');
-        // step 2 check if the address already exists within the database
-        const cachedResult = await Geocode.findOne({ addressHash })
+        // Step 2: Check if the address already exists in the database
+        const cachedResult = await Geocode.findOne({ addressHash });
 
         if (cachedResult) {
             return res.status(200).json({
@@ -38,10 +49,10 @@ router.post('/geocode', async (req, res) => {
                 address: cachedResult.address,
                 latitude: cachedResult.latitude,
                 longitude: cachedResult.longitude,
-            })
+            });
         }
 
-        // step 3 if not in database then pull from external api
+        // Step 3: If not in the database, pull from external API
         const url = `https://maps.googleapis.com/maps/api/geocode/json`;
         const response = await axios.get(url, {
             params: { address, key: GOOGLE_API_KEY },
@@ -57,13 +68,17 @@ router.post('/geocode', async (req, res) => {
 
         const location = response.data.results[0].geometry.location;
 
+        console.log(response.data.results[0])
+
+        // Step 4: Save the result to the database
         const newGeocode = new Geocode({
             address: response.data.results[0].formatted_address,
             addressHash,
             latitude: location.lat,
             longitude: location.lng,
-        })
-        await newGeocode.save()
+        });
+
+        await newGeocode.save();
 
         return res.status(200).json({
             message: 'Address found in external API',
@@ -71,27 +86,29 @@ router.post('/geocode', async (req, res) => {
             latitude: newGeocode.latitude,
             longitude: newGeocode.longitude,
         });
-
     } catch (error) {
-        if (error.code === 11000) { // Duplicate key error
-            const existingResult = await Geocode.findOne({ addressHash });
-            return res.status(409).json({
-                message: 'Address already exists in the database',
-                address: existingResult.address,
-                latitude: existingResult.latitude,
-                longitude: existingResult.longitude,
-            });
+        if (error.code === 11000) {
+            // Handle duplicate key error, ensuring addressHash is defined
+            try {
+                const existingResult = await Geocode.findOne({ address });
+                return res.status(409).json({
+                    message: 'Address already exists in the database',
+                    address: existingResult?.address,
+                    latitude: existingResult?.latitude,
+                    longitude: existingResult?.longitude,
+                });
+            } catch (findError) {
+                console.error("Error finding existing result:", findError);
+            }
         }
-        console.log(error)
+
         return res.status(500).json({ error: 'Server error. Please try again later.' });
-
     }
-
-})
+});
 /**
  * Reverse geocode coordinates to get the address.
  */
-router.post('/reverse-geocode', async (req, res) => {
+router.post('/reverse-geocode', enforceApiLimit, async (req, res) => {
     const { lat, lng } = req.body;
 
     if (!lat || !lng) {
@@ -149,16 +166,6 @@ router.post('/reverse-geocode', async (req, res) => {
         res.status(500).json({ error: 'Server error. Please try again later.' });
     }
 });
-
-router.get('/data', async (req, res) => {
-    try {
-        const allData = await Geocode.find({});
-        res.json(allData);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-})
 /**
  * Geocode an address to get the coordinates. Endpoint allows batch process via flat file upload
  */
@@ -249,6 +256,15 @@ router.post('/batch-geocode', async (req, res) => {
         });
 })
 
+router.get('/data', async (req, res) => {
+    try {
+        const allData = await Geocode.find({});
+        res.json(allData);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+})
 router.delete("/delete/:id", async (req, res) => {
     try {
         const { id } = req.params;

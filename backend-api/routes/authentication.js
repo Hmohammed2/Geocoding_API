@@ -2,17 +2,20 @@ require('dotenv').config()
 const bcrypt = require("bcryptjs");
 const express = require("express");
 const User = require("../models/User");
+const Subscription = require("../models/Subscription");
 const { body, validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const cookieParser = require('cookie-parser');
+const { generateApiKey, encrypt, decrypt } = require('../utils/apiKey')
 
 const router = express();
 router.use(cookieParser()); // This should be before your routes that need cookies
+router.use(express.json())
 
 if (!process.env.JWT_SECRET_TOKEN) {
     console.error("Missing JWT_SECRET in environment variables.");
     process.exit(1);
-  }
+}
 
 // Rate limiter middleware to protect login endpoint
 // const loginLimiter = rateLimit({
@@ -26,10 +29,8 @@ router.post("/register", async (req, res) => {
     const { userName, email, password, location } = req.body;
 
     try {
-        const existingUser = await User.findOne({
-            $or: [{ email }, { userName }]
-        });
-        // Check if either user exists
+        const existingUser = await User.findOne({ email });
+        // Check if user exists
         if (existingUser) {
             return res.status(400).json({
                 message: "User already exists in the database."
@@ -39,15 +40,43 @@ router.post("/register", async (req, res) => {
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const user = new User({
+        // Generate and Encrypt API Key
+        const apiKey = generateApiKey();
+        const encryptedApiKey = encrypt(apiKey);
+
+        // ✅ Create new user
+        const newUser = new User({
             userName,
             password: hashedPassword,
             email,
             location,
+            apiKey: encryptedApiKey,
+            isPayingCustomer: "no"
         });
-        await user.save();
-        console.log(user)
-        res.status(201).json({ message: "User registered successfully" });
+
+        await newUser.save();
+
+        // ✅ Create Free Subscription
+        const freeSubscription = new Subscription({
+            user_id: newUser._id,
+            customer_id: `free-${newUser._id}`, // Placeholder since Stripe isn't used here
+            subscription_type: "free",
+            start_date: new Date(),
+            end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1)), // 1 year validity
+            status_type: "active",
+            stripeSubscriptionId: `free-sub-${newUser._id}`, // Dummy Stripe ID
+            cancelAtPeriodEnd: false,
+        });
+
+        await freeSubscription.save();
+
+        console.log("User & Subscription Created:", newUser, freeSubscription);
+
+        res.status(201).json({
+            message: "User registered successfully",
+            userId: newUser._id,
+            subscription: freeSubscription
+        });
     } catch (error) {
         console.error(error)
         res.status(500).json({ message: "Internal server error" });
@@ -56,16 +85,16 @@ router.post("/register", async (req, res) => {
 
 router.post(
     "/login",
-    [body("userName").notEmpty(), body("password").notEmpty()],
+    [body("email").notEmpty(), body("password").notEmpty()],
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-        const { userName, password } = req.body;
+        const { email, password } = req.body;
 
         try {
-            const user = await User.findOne({ userName });
+            const user = await User.findOne({ email });
             if (!user) {
                 return res.status(400).json({ message: "Invalid credentials" });
             }
@@ -76,9 +105,9 @@ router.post(
             }
 
             const token = jwt.sign(
-                { userId: user._id, username: user.userName},
+                { userId: user._id, username: user.userName, email: user.email },
                 process.env.JWT_SECRET_TOKEN,
-                { expiresIn:'1h' }
+                { expiresIn: '1h' }
             );
 
             // Set the token in a secure, httpOnly cookie
@@ -120,6 +149,7 @@ router.get("/verify-token", async (req, res) => {
             valid: true,
             userId: decoded.userId,
             username: decoded.username,
+            email: decoded.email,
         });
     } catch (error) {
         console.error("Token verification error:", error);
@@ -127,15 +157,39 @@ router.get("/verify-token", async (req, res) => {
     }
 });
 
+// **🔹 API Endpoint to Retrieve API Key**
+router.get("/get-api-key", async (req, res) => {
+    const { email, userId } = req.query; // Get user identifier from query params
 
-router.get('/data', async (req, res) => {
     try {
-        const allData = await User.find({});
-        res.json(allData);
+        if (!email && !userId) {
+            return res.status(400).json({ message: "Email or User ID is required." });
+        }
+
+        // Find user by email or userId
+        const user = await User.findOne({ $or: [{ email }, { _id: userId }] });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        if (!user.apiKey) {
+            return res.status(400).json({ message: "API Key not found for this user." });
+        }
+
+        // Decrypt API key
+        const decryptedApiKey = decrypt(user.apiKey);
+
+        if (!decryptedApiKey) {
+            return res.status(500).json({ message: "Failed to decrypt API key." });
+        }
+
+        res.status(200).json({ apiKey: decryptedApiKey });
     } catch (error) {
-        console.error(error);
+        console.error("Error retrieving API Key:", error);
         res.status(500).json({ message: "Internal server error" });
     }
-})
+});
+
 
 module.exports = router;
