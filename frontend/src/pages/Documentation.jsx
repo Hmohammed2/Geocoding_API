@@ -8,9 +8,9 @@ const Documentation = () => {
       description: "Get geolocation data for a specific address.",
       request: `
 POST /geocode HTTP/1.1
-Host: api.simplegeoapi.com
+Host: simplegeoapi.com
 Content-Type: application/json
-Authorization: Bearer <your-token>
+Headers: x-api-key <Your API Key>
 
 {
   "address": "1600 Amphitheatre Parkway, Mountain View, CA"
@@ -28,51 +28,51 @@ Content-Type: application/json
 }
       `,
     },
-    {
-      method: "GET",
-      endpoint: "/geocode/history",
-      description: "Retrieve a list of previously geocoded addresses for your account.",
-      request: `
-GET /geocode/history HTTP/1.1
-Host: api.simplegeoapi.com
-Authorization: Bearer <your-token>
-      `,
-      response: `
-HTTP/1.1 200 OK
-Content-Type: application/json
+    //     {
+    //       method: "GET",
+    //       endpoint: "/geocode/history",
+    //       description: "Retrieve a list of previously geocoded addresses for your account.",
+    //       request: `
+    // GET /geocode/history HTTP/1.1
+    // Host: simplegeoapi.com
+    // Headers: x-api-key <Your API Key>
+    //       `,
+    //       response: `
+    // HTTP/1.1 200 OK
+    // Content-Type: application/json
 
-[
-  {
-    "address": "1600 Amphitheatre Parkway, Mountain View, CA",
-    "latitude": 37.423021,
-    "longitude": -122.083739,
-    "timestamp": "2025-01-06T12:34:56Z"
-  },
-  {
-    "address": "1 Infinite Loop, Cupertino, CA",
-    "latitude": 37.33182,
-    "longitude": -122.03118,
-    "timestamp": "2025-01-05T15:22:45Z"
-  }
-]
-      `,
-    },
+    // [
+    //   {
+    //     "address": "1600 Amphitheatre Parkway, Mountain View, CA",
+    //     "latitude": 37.423021,
+    //     "longitude": -122.083739,
+    //     "timestamp": "2025-01-06T12:34:56Z"
+    //   },
+    //   {
+    //     "address": "1 Infinite Loop, Cupertino, CA",
+    //     "latitude": 37.33182,
+    //     "longitude": -122.03118,
+    //     "timestamp": "2025-01-05T15:22:45Z"
+    //   }
+    // ]
+    //       `,
+    //     },
     {
-        method: "POST",
-        endpoint: "/reverse-geocode",
-        description: "Get the address for specific latitude and longitude coordinates.",
-        request: `
+      method: "POST",
+      endpoint: "/reverse-geocode",
+      description: "Get the address for specific latitude and longitude coordinates.",
+      request: `
   POST /reverse-geocode HTTP/1.1
-  Host: api.simplegeoapi.com
+  Host: simplegeoapi.com
   Content-Type: application/json
-  Authorization: Bearer <your-token>
+  Headers: x-api-key <Your API Key>
   
   {
     "lat": 37.423021,
     "lng": -122.083739
   }
         `,
-        response: `
+      response: `
   HTTP/1.1 200 OK
   Content-Type: application/json
   
@@ -81,7 +81,7 @@ Content-Type: application/json
     "address": "1600 Amphitheatre Parkway, Mountain View, CA 94043, USA"
   }
         `,
-      },
+    },
   ];
 
   return (
@@ -118,11 +118,10 @@ Content-Type: application/json
               >
                 <h3 className="text-2xl font-bold mb-2">
                   <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium mr-3 ${
-                      endpoint.method === "POST"
+                    className={`px-3 py-1 rounded-full text-sm font-medium mr-3 ${endpoint.method === "POST"
                         ? "bg-green-100 text-green-800"
                         : "bg-blue-100 text-blue-800"
-                    }`}
+                      }`}
                   >
                     {endpoint.method}
                   </span>

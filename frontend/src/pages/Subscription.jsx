@@ -1,14 +1,19 @@
 import { React, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../components/contexts/AuthContext";
 
 const Subscription = () => {
     const navigate = useNavigate()
+    const { user } = useAuth()
+
     const handlePayment = async (subscriptionType) => {
+        if (!user) {navigate("/register")}
+
         try {
             const response = await axios.post(
                 `${import.meta.env.VITE_BACKEND_URL}/payment/create-checkout-session/`,
-                { subscriptionType }
+                { userId: user.userId, subscriptionType }
             );
 
             console.log("Response data:", response.data); // Debugging line

@@ -1,44 +1,48 @@
 import { React, useState } from 'react'
 import { FaUser } from 'react-icons/fa';
-import { useAuth } from '../components/authContext';
+import { useAuth } from '../components/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useAlert } from '../components/contexts/AlertContext';
+import Alert from "../components/Alert";
 
 const LoginPage = () => {
-    const {login} = useAuth();
-    
-    const [username, setUsername] = useState("");
+    const { login } = useAuth();
+    const navigate = useNavigate()
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const { alert, showAlert } = useAlert()
 
     const handleLogin = async () => {
         try {
-            await login(username, password);
-            alert('Successful login!')
-            setUsername("");
-            setPassword("");
-          } catch (error) {
-            alert('Login failed: ', error)
+            await login(email, password);
+            navigate('/login-confirm')
+        } catch (error) {
+            showAlert(error.message, "error");
             console.error("Login failed:", error);
-          }
+        }
     };
 
     return (
         <div className="flex items-center justify-center h-screen border">
+            {/* Render alert component */}
+            {alert && <Alert />}
             <div className="w-96 p-6 shadow-lg bg-white rounded-md">
                 <h1 className="text-3xl flex justify-center text-center font-semibold gap-2 mb-4">
                     <FaUser />
                     Login
                 </h1>
                 <div className="mt-3">
-                    <label htmlFor="username" className="block text-base mb-2 font-semibold">
+                    <label htmlFor="email" className="block text-base mb-2 font-semibold">
                         {" "}
-                        Username
+                        Email Address
                     </label>
                     <input
                         type="text"
-                        name="username"
-                        placeholder="Enter Username..."
-                        onChange={(e) => setUsername(e.target.value)}
-                        value={username}
-                        id="username"
+                        name="email"
+                        placeholder="Enter Email..."
+                        onChange={(e) => setEmail(e.target.value)}
+                        value={email}
+                        id="email"
                         className="border focus:border-2 w-full text-base px-2 focus:outline-none focus:ring-0 focus:border-blue-600 rounded-md"
                         required
                     />

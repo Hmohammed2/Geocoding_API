@@ -2,9 +2,10 @@ import { React, useState } from 'react'
 import { countries } from '../data/data';
 import { FaUser } from "react-icons/fa";
 import axios from "axios";
+import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
-
+    const navigate = useNavigate()
     const [formData, setFormData] = useState({
         userName: "",
         email: "",
@@ -61,8 +62,9 @@ const Register = () => {
             if (response.status !== 201) {
                 alert(`Registration failed: ${response.status}`);
             } else {
-                alert("Registration successful!");
+                navigate("/register-confirm")
             }
+
         } catch (error) {
             handleError(error);
         } finally {
