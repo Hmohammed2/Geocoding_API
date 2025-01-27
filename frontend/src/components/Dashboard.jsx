@@ -21,6 +21,8 @@ const Dashboard = () => {
   const { user, loading } = useAuth();
   const [usageData, setUsageData] = useState(null);
   const [chartData, setChartData] = useState(null);
+  const activeSubscription = user?.subscription?.find(sub => sub.status_type === "active");
+
 
   const chartOptions = {
     responsive: true,
@@ -126,8 +128,8 @@ const Dashboard = () => {
         const totalRequestsThisMonth = data.reduce((acc, item) => acc + item.totalRequests, 0);
 
         // Calculate the user's subscription type (remaining requests)
-        const subscription = user?.subscription?.[0];
-        const planRequestsLimit = subscription?.subscription_type === "free" || user?.isPayingCustomer === "no"
+        const subscription = activeSubscription
+        const planRequestsLimit = subscription?.subscription_type === "free"
           ? 1000
           : subscription?.subscription_type === "pro"
             ? 50000
@@ -199,15 +201,13 @@ const Dashboard = () => {
             <div>
               <p>
                 <span className="font-semibold">Plan:</span>{" "}
-                {user?.isPayingCustomer === "no"
-                  ? "Free Plan"
-                  : `${user?.subscription?.[0]?.subscription_type || "N/A"} plan`}
+                {activeSubscription.subscription_type === "free" ? "Free Plan" : `${activeSubscription.subscription_type || "N/A"} plan`}
               </p>
               <p>
                 <span className="font-semibold">Renew Date:</span>{" "}
-                {user?.isPayingCustomer === "no"
+                {activeSubscription.subscription_type === ""
                   ? "N/A"
-                  : user?.subscription?.[0]?.end_date
+                  : activeSubscription.end_date
                     ? new Date(user.subscription[0].end_date).toLocaleDateString("en-GB", {
                       year: "numeric",
                       month: "short",

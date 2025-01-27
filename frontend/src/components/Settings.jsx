@@ -7,14 +7,19 @@ import { useAlert } from "./contexts/AlertContext";
 const Settings = () => {
     const { user, loading } = useAuth()
     const { alert, showAlert } = useAlert()
+    const activeSubscription = user?.subscription?.find(sub => sub.status_type === "active");
+    
     const [formData, setFormData] = useState(
         {
             userName: user.userName,
             email: user.email,
-            plan: user?.isPayingCustomer === 'no' ? 'free plan' : user?.subscription?.[0]?.subscription_type || 'free plan', // Default to 'Free Plan' if no subscription is available 
+            plan: activeSubscription ? activeSubscription.subscription_type : "free" // Default to 'Free Plan' if no subscription is available 
         }); // Separate form state
     const [apiKey, setApiKey] = useState(""); // Store decrypted API key
     const [showApiKey, setShowApiKey] = useState(false); // Toggle API key visibility
+
+
+
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -52,17 +57,31 @@ const Settings = () => {
             );
 
             console.log("Response data:", response.data); // Debugging line
+            if (response.data.message === "Subscription upgraded successfully to Premium!") {
+                showAlert("Your subscription has been upgraded to Premium!", "success");
+                setFormData({ ...formData, plan: "premium" });  // Update the form data to reflect the new plan
+              }
+
             if (response.data.url) {
                 window.location.href = response.data.url; // Redirect to Stripe checkout
             } else {
                 console.log("No URL returned from server");
+                showAlert('Failed to get checkout session URL', 'error');
             }
         } catch (error) {
             console.error("Error creating checkout session:", error);
+            showAlert(error.response?.data?.message || 'Something went wrong', 'error');
         }
     };
 
     const handleManageSubscription = async () => {
+        const activeSubscription = user?.subscription?.find(sub => sub.status_type !== "canceled");
+
+        if (!activeSubscription || !activeSubscription.customer_id) {
+            showAlert("No active subscription to manage.", "error");
+        return;
+        }
+
         try {
             const response = await axios.post(
                 `${import.meta.env.VITE_BACKEND_URL}/payment/customers/${user.subscription[0].customer_id}`,
@@ -171,7 +190,7 @@ const Settings = () => {
                 <h3 className="text-lg font-bold mb-2">Upgrade Plan</h3>
                 <div className="space-y-2">
                     <button
-                        className={`w-full text-left px-4 py-2 border rounded-md hover:bg-blue-100 ${formData.plan === "free plan" ? "bg-blue-200" : ""
+                        className={`w-full text-left px-4 py-2 border rounded-md hover:bg-blue-100 ${formData.plan === "free" ? "bg-blue-200" : ""
                             }`}
                     >
                         Free Plan
@@ -198,11 +217,11 @@ const Settings = () => {
                     <button
                         onClick={handleManageSubscription}
                         type="button"
-                        className={`py-2 px-4 rounded-md w-full ${user?.isPayingCustomer === 'no'
+                        className={`py-2 px-4 rounded-md w-full ${user?.subscription?.[0]?.subscription_type === "free"
                             ? 'bg-gray-400 cursor-not-allowed' // Disabled styling
                             : 'bg-blue-600 text-white hover:bg-blue-700' // Active styling
                             }`}
-                        disabled={user?.isPayingCustomer === 'no'} // Disables button if the user is not a paying customer
+                        disabled={!user?.subscription?.some(sub => sub.status_type !== "canceled")} // Disables button if the user is not a paying customer
                     >
                         Manage Subscription
                     </button>

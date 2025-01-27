@@ -1,4 +1,3 @@
-require('dotenv').config();
 const axios = require('axios');
 const express = require('express');
 const Geocode = require('../models/Geocode')
@@ -8,6 +7,7 @@ const csvParser = require('csv-parser');
 const trackApiUsage = require('../middleware/trackApiUsage')
 const verifyApiKey = require("../middleware/verifyApiKey"); // Adjust the path as needed
 const enforceApiLimit = require('../middleware/enforceApiLimit');
+const checkProOrPremium = require("../middleware/checkProOrPremium")
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const router = express.Router()
@@ -16,13 +16,16 @@ const router = express.Router()
 const upload = multer({ dest: 'uploads/' });
 
 // Middleware
+router.use(express.json())
 router.use(trackApiUsage)
 router.use(verifyApiKey)
+router.use(enforceApiLimit)
+
 
 /**
  * Geocode an address to get its coordinates.
  */
-router.post('/geocode', enforceApiLimit, async (req, res) => {
+router.post('/geocode', async (req, res) => {
     const { address } = req.body;
 
     if (!address) {
@@ -108,7 +111,7 @@ router.post('/geocode', enforceApiLimit, async (req, res) => {
 /**
  * Reverse geocode coordinates to get the address.
  */
-router.post('/reverse-geocode', enforceApiLimit, async (req, res) => {
+router.post('/reverse-geocode', async (req, res) => {
     const { lat, lng } = req.body;
 
     if (!lat || !lng) {
@@ -255,29 +258,84 @@ router.post('/batch-geocode', async (req, res) => {
             });
         });
 })
+/**
+ * Geocode an address to get the coordinates. Endpoint allows batch process via json
+ */
+router.post('/batch-geocode-json', checkProOrPremium, async (req, res) => {
+    const { addresses } = req.body; // Expecting an array of address strings
 
-router.get('/data', async (req, res) => {
-    try {
-        const allData = await Geocode.find({});
-        res.json(allData);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal server error" });
+    if (!Array.isArray(addresses) || addresses.length === 0) {
+        return res.status(400).json({ error: 'A non-empty array of addresses is required.' });
     }
-})
-router.delete("/delete/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
-        const address = await Geocode.findByIdAndDelete(id);
 
+    const results = [];
+    const errors = [];
+
+    for (const address of addresses) {
         if (!address) {
-            return res.status(404).json({ message: "Address not found" });
+            errors.push({ address, error: 'Address is missing.' });
+            continue;
         }
-        res.status(204).json({ message: "Entry deleted successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
+
+        // Normalize and hash the address
+        const formattedAddress = address.trim().toLowerCase();
+        const addressHash = crypto.createHash('sha256').update(formattedAddress).digest('hex');
+
+        try {
+            // Check if the address exists in the database
+            const cachedResult = await Geocode.findOne({ addressHash });
+
+            if (cachedResult) {
+                results.push({
+                    address: cachedResult.address,
+                    latitude: cachedResult.latitude,
+                    longitude: cachedResult.longitude,
+                    status: 'cached',
+                });
+            } else {
+                // Fetch geocode from Google API
+                const url = `https://maps.googleapis.com/maps/api/geocode/json`;
+                const response = await axios.get(url, {
+                    params: { address, key: GOOGLE_API_KEY },
+                });
+
+                if (!response.data.results || response.data.results.length === 0) {
+                    errors.push({ address, error: 'No results found.' });
+                    continue;
+                }
+
+                if (response.data.status !== 'OK') {
+                    errors.push({ address, error: `Geocoding failed: ${response.data.status}` });
+                    continue;
+                }
+
+                const location = response.data.results[0].geometry.location;
+                const newGeocode = new Geocode({
+                    address: response.data.results[0].formatted_address,
+                    addressHash,
+                    latitude: location.lat,
+                    longitude: location.lng,
+                });
+                await newGeocode.save();
+
+                results.push({
+                    address: newGeocode.address,
+                    latitude: newGeocode.latitude,
+                    longitude: newGeocode.longitude,
+                    status: 'new',
+                });
+            }
+        } catch (error) {
+            errors.push({ address, error: 'Server error during geocoding.' });
+            console.error(error);
+        }
     }
-})
+
+    return res.status(errors.length > 0 ? 400 : 200).json({
+        message: errors.length > 0 ? 'Batch geocoding completed with errors.' : 'Batch geocoding completed successfully.',
+        results,
+        errors,
+    });
+});
 
 module.exports = router;

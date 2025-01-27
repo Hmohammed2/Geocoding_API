@@ -1,9 +1,13 @@
+const dotenv = require('dotenv')
 const express = require('express')
 const cors = require('cors')
 
-require('dotenv').config()
+// Load the appropriate .env file
+const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env.development";
+dotenv.config({ path: envFile });
 // Import and initialize the MongoDB connection
 require("./db")
+console.log(envFile)
 
 const PORT = process.env.PORT || 3000;
 const app = express()

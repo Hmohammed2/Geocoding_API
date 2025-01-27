@@ -52,6 +52,8 @@ const Subscription = () => {
                 "Up to 50,000 requests/month",
                 "Faster API response time",
                 "Email support",
+                "Access to Batch Geocoding",
+                "Basic Analytics on usage",
             ],
             bgColor: "bg-purple-500",
             hoverColor: "hover:bg-purple-600",
@@ -69,6 +71,8 @@ const Subscription = () => {
                 "Priority API response time",
                 "24/7 email support",
                 "Access to advanced geocoding features",
+                "Customizable geocoding data sources",
+                "Advanced location-based analytics",
             ],
             bgColor: "bg-blue-500",
             hoverColor: "hover:bg-blue-600",
@@ -84,12 +88,40 @@ const Subscription = () => {
         "API response time",
         "Support type",
         "Advanced geocoding features",
+        "Batch Geocoding",
+        "Advanced Analytics",
+        "Custom Data Sources",
     ];
-
+    
     const benefitsData = {
-        "Free": ["1,000", "Standard", "Community", "No"],
-        "Pro": ["50,000", "Faster", "Email", "No"],
-        "Premium": ["250,000", "Priority", "24/7 Email", "Yes"],
+        "Free": [
+            "1,000",
+            "Standard",
+            "Community",
+            "No",
+            "No",
+            "No",
+            "No",
+            "No"
+        ],
+        "Pro": [
+            "50,000",
+            "Faster",
+            "Email",
+            "No",
+            "Yes",  // Access to batch geocoding
+            "No",   // No advanced analytics
+            "No",   // No customizable data sources
+        ],
+        "Premium": [
+            "250,000",
+            "Priority",
+            "24/7 Email",
+            "Yes",  // Access to advanced geocoding features
+            "Yes",  // Access to batch geocoding
+            "Yes",  // Access to advanced analytics
+            "Yes",  // Customizable data sources
+        ]
     };
 
     const faqs = [

@@ -6,18 +6,23 @@ const stripe = require("stripe")(STRIPE_PRIVATE_KEY);
 const Subscription = require("../models/Subscription");
 const User = require("../models/User");
 
+if (!STRIPE_PRIVATE_KEY || !STRIPE_PRICE_ID_PRO || !STRIPE_PRICE_ID_PREMIUM) {
+  console.error("Missing required environment variables");
+  process.exit(1); // Terminate the process to prevent further errors
+}
+
 router.post("/create-checkout-session", express.json(), async (req, res) => {
   const { userId, subscriptionType } = req.body;
 
   if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "❌ Unauthorized User" });
   }
 
   try {
     // Fetch the user's current active subscription
     const existingSubscription = await Subscription.findOne({
       user_id: userId,
-      status_type: "Active",
+      status_type: "active",
     });
 
     if (existingSubscription) {
@@ -47,24 +52,38 @@ router.post("/create-checkout-session", express.json(), async (req, res) => {
 
     // ✅ If the user has a free subscription, allow upgrade
     if (!existingSubscription || existingSubscription.subscription_type === "free") {
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
-        line_items: [
-          {
-            price: subscriptionType === "pro" ? STRIPE_PRICE_ID_PRO : STRIPE_PRICE_ID_PREMIUM,
-            quantity: 1,
-          },
-        ],
-        mode: "subscription",
-        success_url: `${BACK_END}/payment/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${FRONT_END}/home`,
-        metadata: { userId, subscriptionType },
-      });
+      try {
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price: subscriptionType === "pro" ? STRIPE_PRICE_ID_PRO : STRIPE_PRICE_ID_PREMIUM,
+              quantity: 1,
+            },
+          ],
+          mode: "subscription",
+          success_url: `${BACK_END}/payment/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${FRONT_END}/home`,
+          metadata: { userId, subscriptionType },
+        });
 
-      return res.json({ url: session.url });
+        return res.json({ url: session.url });
+
+      } catch (error) {
+        console.error("❌ Error creating Stripe checkout session:", error);
+
+        // If the error is related to incorrect request parameters, you might use 400
+        if (error.type === 'StripeInvalidRequestError' || error.type === 'StripeCardError') {
+          return res.status(400).json({ error: error.message });
+        }
+
+        // If it's an unexpected error, a 500 is more appropriate
+        res.status(500).json({ error: "❌ Internal Server Error: Could not create checkout session." });
+      }
+
     }
 
-    return res.status(400).json({ message: "Invalid subscription state." });
+    return res.status(400).json({ message: "❌ Invalid subscription state." });
 
   } catch (e) {
     console.error(e);
@@ -150,11 +169,16 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       case 'checkout.session.completed': {
         console.log("✅ New subscription started!");
 
+        if (!eventData.metadata?.userId || !eventData.subscription) {
+          console.error("🚨 Missing metadata or subscription ID in checkout.session.completed");
+          return res.status(400).send("Missing required metadata.");
+        }
+
         const { userId, subscriptionType } = eventData.metadata;
         const stripeSubscriptionId = eventData.subscription;
 
         // Find existing active subscription
-        let existingSubscription = await Subscription.findOne({ user_id: userId, status_type: "Active" });
+        let existingSubscription = await Subscription.findOne({ user_id: userId, status_type: "active" });
 
         if (existingSubscription) {
           if (existingSubscription.subscription_type === "premium") {
@@ -167,7 +191,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             existingSubscription.subscription_type = "premium";
             existingSubscription.stripeSubscriptionId = stripeSubscriptionId;
             existingSubscription.lastPayment = new Date();
-            existingSubscription.status_type = "Active";
+            existingSubscription.status_type = "active";
             existingSubscription.cancelAtPeriodEnd = false;
             await existingSubscription.save();
 
@@ -181,7 +205,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             existingSubscription.stripeSubscriptionId = stripeSubscriptionId;
             existingSubscription.customer_id = eventData.customer
             existingSubscription.lastPayment = new Date();
-            existingSubscription.status_type = "Active";
+            existingSubscription.status_type = "active";
             existingSubscription.cancelAtPeriodEnd = false;
             await existingSubscription.save();
 
@@ -189,13 +213,16 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             return res.status(200).json({ message: `Subscription upgraded to ${subscriptionType} successfully.` });
           }
 
-          console.log("❌ User already has an active subscription. No new subscription created.");
-          return res.status(400).json({ message: "You already have an active subscription." });
+          if (existingSubscription && existingSubscription.subscription_type !== "free") {
+            console.log("❌ User already has an active non-free subscription. No new subscription created.");
+            return res.status(400).json({ message: "You already have a paid subscription." });
+          }
         }
 
         // ✅ If no active subscription, create a new one
         const startDate = new Date();
-        let endDate = new Date(startDate);
+        const endDate = new Date(eventData.current_period_end * 1000);
+        
         if (subscriptionType === "pro" || subscriptionType === "premium") {
           endDate.setFullYear(startDate.getFullYear() + 1);
         }
@@ -206,7 +233,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
           subscription_type: subscriptionType,
           start_date: startDate,
           end_date: endDate,
-          status_type: "Active",
+          status_type: "active",
           stripeSubscriptionId: stripeSubscriptionId,
           cancelAtPeriodEnd: false,
           lastPayment: new Date(),
@@ -214,9 +241,6 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
         await newSubscription.save();
         console.log("✅ New subscription record created.");
-
-        // Update user to be a paying customer
-        await User.findByIdAndUpdate(userId, { isPayingCustomer: "yes" });
 
         break;
       }
@@ -226,7 +250,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
         await Subscription.findOneAndUpdate(
           { stripeSubscriptionId: eventData.subscription },
-          { status: "active", lastPayment: new Date() }
+          { status_type: "active", lastPayment: new Date() }
         );
 
         break;
@@ -237,7 +261,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
         await Subscription.findOneAndUpdate(
           { stripeSubscriptionId: eventData.subscription },
-          { status: "past_due" }
+          { status_type: eventData.attempt_count > 3 ? "canceled" : "past_due" }
         );
 
         break;
@@ -245,6 +269,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
       case 'customer.subscription.updated': {
         console.log("🔄 Subscription updated:", eventData.id);
+        console.log(eventData)
 
         await Subscription.findOneAndUpdate(
           { stripeSubscriptionId: eventData.id },
@@ -254,22 +279,59 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
           }
         );
 
+        if (!eventData.cancel_at_period_end) {
+          console.log("✅ User reactivated subscription.");
+        }
+
         break;
       }
 
       case 'customer.subscription.deleted': {
         console.log("❌ Subscription canceled:", eventData.id);
 
-        await Subscription.findOneAndUpdate(
-          { stripeSubscriptionId: eventData.id },
-          { status: "canceled", canceledAt: new Date() }
+        // Find the canceled subscription
+        const canceledSubscription = await Subscription.findOneAndUpdate(
+            { stripeSubscriptionId: eventData.id },
+            { status_type: "canceled", canceledAt: new Date() },
+            { new: true }
         );
-
-        break;
+    
+        if (!canceledSubscription) {
+            console.error("🚨 Subscription not found.");
+            return res.status(404).send("Subscription not found.");
+        }
+    
+        // Check if the user has any active subscriptions left
+        const activeSubscriptions = await Subscription.find({
+            user_id: canceledSubscription.user_id,
+            status_type: "active",
+        });
+    
+        if (activeSubscriptions.length === 0) {
+            console.log("🔄 No active subscriptions found. Reverting user to Free Plan.");
+    
+            // Create a new Free subscription entry if the user has no active plans
+            const newFreeSubscription = new Subscription({
+                user_id: canceledSubscription.user_id,
+                customer_id: canceledSubscription.customer_id || eventData.customer,
+                subscription_type: "free",
+                status_type: "active",
+                start_date: new Date(),
+                end_date: null, // Free plan has no expiry
+                stripeSubscriptionId: null,
+                cancelAtPeriodEnd: false,
+                lastPayment: null,
+            });
+    
+            await newFreeSubscription.save();
+            console.log("✅ User reverted to Free Plan.");
+        } else {
+            console.log("✅ User still has an active subscription. No action needed.");
+        }
       }
 
       default:
-        console.log(`⚠️ Unhandled event type: ${eventType}`);
+        console.warn(`⚠️ Unhandled event: ${eventType}`, JSON.stringify(eventData, null, 2))
     }
 
     res.status(200).send("Webhook received.");
@@ -295,12 +357,12 @@ router.delete("/delete/:id", express.json(), async (req, res) => {
     const payment = await Subscription.findByIdAndDelete(id);
 
     if (!payment) {
-      return res.status(404).json({ message: "payment not found" });
+      return res.status(404).json({ message: "❌ Payment not found" });
     }
-    res.status(204).json({ message: "Entry deleted successfully" });
+    res.status(204).json({ message: "✅ Entry deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "❌ Internal Server error" });
   }
 })
 

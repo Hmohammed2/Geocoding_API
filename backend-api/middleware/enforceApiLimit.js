@@ -1,19 +1,17 @@
 const User = require('../models/User'); // Adjust the path to the User model
 const Subscription = require('../models/Subscription');
 const ApiUsage = require('../models/ApiUsage');
-const { encrypt } = require('.././utils/apiKey');
 
 const enforceApiLimit = async (req, res, next) => {
   const apiKey = req.headers['x-api-key']; // Replace with the header or query parameter used for the API key
-  const encryptedApiKey = encrypt(apiKey)
 
-  if (!encryptedApiKey) {
+  if (!apiKey) {
     return res.status(401).json({ message: 'API key is required' });
   }
 
   try {
     // Fetch the user using the API key
-    const user = await User.findOne({ apiKey:encryptedApiKey });
+    const user = await User.findOne({ apiKey });
 
     if (!user) {
       return res.status(403).json({ message: 'Invalid API key' });
@@ -28,7 +26,7 @@ const enforceApiLimit = async (req, res, next) => {
 
     // Count API usage
     const usageCount = await ApiUsage.countDocuments({
-      api_key: encryptedApiKey,
+      api_key: apiKey,
       timestamp: { $gte: new Date(subscription.start_date), $lte: new Date(subscription.end_date) },
     });
 

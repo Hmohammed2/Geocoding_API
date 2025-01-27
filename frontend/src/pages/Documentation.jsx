@@ -28,35 +28,6 @@ Content-Type: application/json
 }
       `,
     },
-    //     {
-    //       method: "GET",
-    //       endpoint: "/geocode/history",
-    //       description: "Retrieve a list of previously geocoded addresses for your account.",
-    //       request: `
-    // GET /geocode/history HTTP/1.1
-    // Host: simplegeoapi.com
-    // Headers: x-api-key <Your API Key>
-    //       `,
-    //       response: `
-    // HTTP/1.1 200 OK
-    // Content-Type: application/json
-
-    // [
-    //   {
-    //     "address": "1600 Amphitheatre Parkway, Mountain View, CA",
-    //     "latitude": 37.423021,
-    //     "longitude": -122.083739,
-    //     "timestamp": "2025-01-06T12:34:56Z"
-    //   },
-    //   {
-    //     "address": "1 Infinite Loop, Cupertino, CA",
-    //     "latitude": 37.33182,
-    //     "longitude": -122.03118,
-    //     "timestamp": "2025-01-05T15:22:45Z"
-    //   }
-    // ]
-    //       `,
-    //     },
     {
       method: "POST",
       endpoint: "/reverse-geocode",
@@ -77,10 +48,44 @@ Content-Type: application/json
   Content-Type: application/json
   
   {
-    "message": "Coordinates fetched from external API",
+  "message": "Coordinates fetched from external API",
     "address": "1600 Amphitheatre Parkway, Mountain View, CA 94043, USA"
   }
         `,
+    },
+    {
+      method: "POST",
+      endpoint: "/batch-geocode-json",
+      description: "Get geolocation data for multiple addresses.",
+      proOnly: true, // Mark this endpoint as Pro
+      request: `
+    POST /batch-geocode-json HTTP/1.1
+    Host: simplegeoapi.com
+    Headers: x-api-key <Your API Key>
+          `,
+      response: `
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+
+    {
+        "message": "Batch geocoding completed successfully.",
+      "results": [
+      {
+        "address": "1600 Amphitheatre Parkway, Mountain View, CA",
+        "latitude": 37.423021,
+        "longitude": -122.083739,
+        "status": "cached"
+      },
+      {
+        "address": "1 Infinite Loop, Cupertino, CA",
+        "latitude": 37.33182,
+        "longitude": -122.03118,
+        "status": "cached"
+      }
+    ],
+    "errors": []
+        }
+          `,
     },
   ];
 
@@ -100,8 +105,7 @@ Content-Type: application/json
           <h2 className="text-3xl font-semibold mb-4">API Overview</h2>
           <p className="text-lg">
             The SimpleGeoAPI provides fast and reliable geocoding services for your applications.
-            With our endpoints, you can retrieve latitude and longitude for any address and access
-            your geocoding history.
+            With our endpoints, you can retrieve latitude and longitude for any address.
           </p>
         </section>
 
@@ -111,21 +115,26 @@ Content-Type: application/json
             {endpoints.map((endpoint, index) => (
               <div
                 key={index}
-                className="bg-white shadow rounded-lg p-6 border-l-4"
-                style={{
-                  borderColor: endpoint.method === "POST" ? "#4ade80" : "#3b82f6",
-                }}
+                className={`bg-white shadow rounded-lg p-6 border-l-4 relative ${
+                  endpoint.proOnly ? "border-yellow-500" : "border-green-500"
+                }`}
               >
-                <h3 className="text-2xl font-bold mb-2">
+                <h3 className="text-2xl font-bold mb-2 flex items-center">
                   <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium mr-3 ${endpoint.method === "POST"
+                    className={`px-3 py-1 rounded-full text-sm font-medium mr-3 ${
+                      endpoint.method === "POST"
                         ? "bg-green-100 text-green-800"
                         : "bg-blue-100 text-blue-800"
-                      }`}
+                    }`}
                   >
                     {endpoint.method}
                   </span>
                   {endpoint.endpoint}
+                  {endpoint.proOnly && (
+                    <span className="ml-3 px-2 py-1 text-xs font-semibold bg-yellow-400 text-yellow-900 rounded-full">
+                      Pro Edition
+                    </span>
+                  )}
                 </h3>
                 <p className="text-gray-700 mb-4">{endpoint.description}</p>
                 <div>

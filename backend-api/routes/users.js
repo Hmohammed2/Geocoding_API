@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Geocode = require("../models/Geocode");
 const express = require("express");
 const mongoose = require('mongoose')
 const router = express();
@@ -8,7 +9,7 @@ const getUserWithSubscription = async (userId) => {
       const user = await User.findById(userId)
         .populate({
           path: "subscription", // Reference the virtual field
-          select: "subscription_type customer_id start_date end_date status_type", // Fields to include from Subscription
+          select: "subscription_type customer_id start_date end_date status_type stripeSubscriptionId cancelAtPeriodEnd lastPayment canceledAt" // Fields to include from Subscription
         })
         .exec();
   
@@ -28,7 +29,7 @@ router.get('/data', async (req, res) => {
         const user = await User.find({})
         .populate({
           path: "subscription", // Reference the virtual field
-          select: "subscription_type customer_id start_date end_date status_type", // Fields to include from Subscription
+          select: "subscription_type customer_id start_date end_date status_type stripeSubscriptionId cancelAtPeriodEnd lastPayment canceledAt", // Fields to include from Subscription
         })
         .exec();
   
@@ -91,6 +92,16 @@ router.put('/update', async (req, res) => {
         // Respond with the updated user data
         res.status(200).json({ message: "User updated successfully", user: updatedUser });
 
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+})
+
+router.get('/geocode-data', async (req, res) => {
+    try {
+        const allData = await Geocode.find({});
+        res.json(allData);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal server error" });

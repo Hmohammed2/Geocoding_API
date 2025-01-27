@@ -1,6 +1,7 @@
 // middleware/verifyApiKey.js
 const User = require("../models/User"); // Replace with the correct path to your User model
 
+
 const verifyApiKey = async (req, res, next) => {
     const apiKey = req.header("x-api-key");
 

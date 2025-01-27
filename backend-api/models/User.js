@@ -7,7 +7,6 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true, index: true },
     apiKey: { type: String, unique: true, index: true}, // Add API key field
     location: { type: String },
-    isPayingCustomer: { type: String, enum: ['yes', 'no'], default: 'no' },
     password: { type: String, required: true }
 })
 

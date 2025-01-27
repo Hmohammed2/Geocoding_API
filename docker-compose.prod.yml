@@ -3,29 +3,28 @@ services:
     container_name: frontend-api
     build:
       context: "./frontend"
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app/frontend
-      - /app/frontend/node_modules
-    command: npm run dev
+      - "80:80"
+    image:
+      - hmohammed2/geocode-api-frontend:v1.0.0
+    env_file:
+      - ./frontend/.env.production
   geocode_api:
     container_name: geocode_api
     build:
       context: "./backend-api"
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     ports: 
       - "3000:3000"
-    volumes:
-      - ./backend-api:/app/backend
-      - /app/backend/node_modules
+    image:
+      - hmohammed2/geocode-api:v1.0.0
+    env_file:
+      - ./backend-api/.env.production
     environment:
-      - NODE_ENV = DEV
-      - CHOKIDAR_USEPOLLING=true
+      - NODE_ENV=production
     depends_on:
       - mongo
-    command: npm run dev
   mongo:
     image: mongo:latest
     container_name: mongo-geocode
@@ -41,6 +40,7 @@ services:
       - stripe-cli-config:/root/.config/stripe
     depends_on:
       - geocode_api
+
 volumes:
   mongo-data:
   stripe-cli-config:
