@@ -6,8 +6,7 @@ services:
       dockerfile: Dockerfile.prod
     ports:
       - "80:80"
-    image:
-      - hmohammed2/geocode-api-frontend:v1.0.0
+    image: hmohammed2/geocode-api-frontend:v1.0.0
     env_file:
       - ./frontend/.env.production
   geocode_api:
@@ -17,8 +16,7 @@ services:
       dockerfile: Dockerfile.prod
     ports: 
       - "3000:3000"
-    image:
-      - hmohammed2/geocode-api:v1.0.0
+    image: hmohammed2/geocode-api:v1.0.0
     env_file:
       - ./backend-api/.env.production
     environment:
@@ -30,12 +28,16 @@ services:
     container_name: mongo-geocode
     ports: 
       - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
     volumes:
       - ./mongo_data:/data/db
   stripe:
     image: stripe/stripe-cli
     container_name: stripe-cli
-    command: ["listen", "--forward-to", "http://geocode_api:3000/payment/webhook"]
+    command: ["listen", "--forward-to", "http://geocode_api:3000/api/payment/webhook"]
     volumes:
       - stripe-cli-config:/root/.config/stripe
     depends_on:

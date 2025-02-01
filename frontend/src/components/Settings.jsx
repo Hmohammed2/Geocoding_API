@@ -15,7 +15,6 @@ const Settings = () => {
             email: user.email,
             plan: activeSubscription ? activeSubscription.subscription_type : "free" // Default to 'Free Plan' if no subscription is available 
         }); // Separate form state
-    const [apiKey, setApiKey] = useState(""); // Store decrypted API key
     const [showApiKey, setShowApiKey] = useState(false); // Toggle API key visibility
 
 
@@ -31,8 +30,8 @@ const Settings = () => {
         e.preventDefault();
         try {
             const response = await axios.put(
-                `${import.meta.env.VITE_BACKEND_URL}/users/update`,
-                { userId: user.userId, userName: formData.name, email: formData.email }
+                `${import.meta.env.VITE_BACKEND_URL}/api/users/update`,
+                { userId: user.userId, userName: formData.userName, email: formData.email }
             );
             console.log("Profile updated!", response.data)
             // Show success alert
@@ -47,21 +46,26 @@ const Settings = () => {
     };
 
     const handleUpgrade = async (newPlan) => {
-        // Call API to update plan
+        if (formData.plan === "pro" && newPlan === "premium") {
+            const confirmUpgrade = window.confirm("You are currently on the Pro plan. Are you sure you want to upgrade to Premium?");
+            if (!confirmUpgrade) return;
+        }
+    
         console.log("Upgrading to:", newPlan);
-
+    
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/payment/create-checkout-session/`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/payment/create-checkout-session/`,
                 { userId: user.userId, subscriptionType: newPlan }
             );
-
-            console.log("Response data:", response.data); // Debugging line
+    
+            console.log("Response data:", response.data);
+    
             if (response.data.message === "Subscription upgraded successfully to Premium!") {
                 showAlert("Your subscription has been upgraded to Premium!", "success");
-                setFormData({ ...formData, plan: "premium" });  // Update the form data to reflect the new plan
-              }
-
+                setFormData({ ...formData, plan: "premium" }); // Update plan state
+            }
+    
             if (response.data.url) {
                 window.location.href = response.data.url; // Redirect to Stripe checkout
             } else {
@@ -84,7 +88,7 @@ const Settings = () => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/payment/customers/${user.subscription[0].customer_id}`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/payment/customers/${user.subscription[0].customer_id}`,
                 { userId: user.userId }
             );
 
@@ -100,27 +104,8 @@ const Settings = () => {
     }
 
     // Fetch decrypted API key when button is clicked
-    const handleShowApiKey = async () => {
-        if (showApiKey) {
-            setShowApiKey(false); // Hide API key if already visible
-            return;
-        }
-
-        try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/get-api-key`, {
-                params: { userId: user.userId },
-            });
-
-            if (response.data.apiKey) {
-                setApiKey(response.data.apiKey);
-                setShowApiKey(true);
-            } else {
-                showAlert("Failed to retrieve API Key", "error");
-            }
-        } catch (error) {
-            console.error("Error fetching API key:", error);
-            showAlert("Error retrieving API Key", "error");
-        }
+    const handleShowApiKey = () => {
+        setShowApiKey(prevState => !prevState); // Toggle the current state
     };
 
     if (loading) {

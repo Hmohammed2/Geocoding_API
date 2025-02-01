@@ -61,7 +61,7 @@ const getUserUsageStatsByDay = async (userId) => {
 };
 
 // Route to fetch monthly API usage stats
-router.get("/usage/monthly", async (req, res) => {
+router.get("/monthly", async (req, res) => {
   const apiKey = req.headers["x-api-key"];
 
   if (!apiKey) {
@@ -83,7 +83,7 @@ router.get("/usage/monthly", async (req, res) => {
 });
 
 // Route to fetch daily API usage stats
-router.get("/usage/daily", async (req, res) => {
+router.get("/daily", async (req, res) => {
   const apiKey = req.headers["x-api-key"];
 
   if (!apiKey) {

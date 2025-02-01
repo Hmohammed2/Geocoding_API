@@ -1,6 +1,7 @@
 import { React, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useAuth } from "../components/contexts/AuthContext";
 
 const Subscription = () => {
@@ -8,11 +9,11 @@ const Subscription = () => {
     const { user } = useAuth()
 
     const handlePayment = async (subscriptionType) => {
-        if (!user) {navigate("/register")}
+        if (!user) { navigate("/register") }
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/payment/create-checkout-session/`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/payment/create-checkout-session/`,
                 { userId: user.userId, subscriptionType }
             );
 
@@ -92,7 +93,7 @@ const Subscription = () => {
         "Advanced Analytics",
         "Custom Data Sources",
     ];
-    
+
     const benefitsData = {
         "Free": [
             "1,000",
@@ -108,7 +109,7 @@ const Subscription = () => {
             "50,000",
             "Faster",
             "Email",
-            "No",
+            "Yes",
             "Yes",  // Access to batch geocoding
             "No",   // No advanced analytics
             "No",   // No customizable data sources
@@ -157,7 +158,18 @@ const Subscription = () => {
         setOpenFAQ(openFAQ === index ? null : index);
     };
 
-    return (
+    return (<>
+        {/* SEO Optimization */}
+        <Helmet>
+            <title>Subscription Plans - GeoCode API</title>
+            <meta name="description" content="Choose the right plan for your needs. Free, Pro, and Premium options available with advanced geolocation features." />
+            <meta name="keywords" content="geocode, API, subscription, pricing, location services" />
+            <meta property="og:title" content="GeoCode API Subscription Plans" />
+            <meta property="og:description" content="Flexible subscription plans to meet your geolocation needs." />
+            <meta property="og:image" content="https://simplegeoapi.com/og-image.jpg" />
+            <meta property="og:url" content="https://simplegeoapi.com/pricing" />
+            <link rel="canonical" href="https://simplegeoapi.com/pricing" />
+        </Helmet>
         <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6">
             <h1 className="text-gray-800 text-3xl py-10 font-bold">SimpleGeoAPI plans and pricing</h1>
             {/* Plans */}
@@ -271,6 +283,7 @@ const Subscription = () => {
                 </div>
             </div>
         </div>
+    </>
     );
 };
 

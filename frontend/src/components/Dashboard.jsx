@@ -201,13 +201,13 @@ const Dashboard = () => {
             <div>
               <p>
                 <span className="font-semibold">Plan:</span>{" "}
-                {activeSubscription.subscription_type === "free" ? "Free Plan" : `${activeSubscription.subscription_type || "N/A"} plan`}
+                {activeSubscription?.subscription_type === "free" ? "Free Plan" : `${activeSubscription?.subscription_type || "N/A"} plan`}
               </p>
               <p>
                 <span className="font-semibold">Renew Date:</span>{" "}
-                {activeSubscription.subscription_type === ""
+                {activeSubscription?.subscription_type === ""
                   ? "N/A"
-                  : activeSubscription.end_date
+                  : activeSubscription?.end_date
                     ? new Date(user.subscription[0].end_date).toLocaleDateString("en-GB", {
                       year: "numeric",
                       month: "short",

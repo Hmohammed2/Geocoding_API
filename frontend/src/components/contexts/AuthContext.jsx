@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
 
   const verifyToken = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/verify-token`);
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/verify-token`);
       if (response.status === 200 && response.data.valid) {
         const { userId, username, email, customerId } = response.data;
         const verifiedUser = { userId, username, email, customerId };
@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     const verifiedUser = await verifyToken();
     if (verifiedUser) {
       try {
-        const results = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/users/data/${verifiedUser.userId}`);
+        const results = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/users/data/${verifiedUser.userId}`);
         setUser({ ...verifiedUser, ...results.data }); // Merge verified user and fetched data
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -49,8 +49,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
+    console.log(`${import.meta.env.VITE_BACKEND_URL}`)
     try {
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, { email, password });
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/login`, { email, password });
       if (response.status === 200) {
         await verifyTokenAndFetchData(); // Re-verify token and fetch user data after login
       } else {
@@ -64,7 +65,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/logout`);
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`);
       setUser(null); // Clear user state
       console.log("Logout successful!");
     } catch (error) {

@@ -31,17 +31,17 @@ router.post("/create-checkout-session", express.json(), async (req, res) => {
       }
 
       if (existingSubscription.subscription_type === "pro" && subscriptionType === "premium") {
-        // ✅ User is upgrading from Pro to Premium → Update Subscription Instead
-        const updatedSubscription = await stripe.subscriptions.update(
-          existingSubscription.stripeSubscriptionId,
-          { cancel_at_period_end: false, items: [{ price: STRIPE_PRICE_ID_PREMIUM }] }
-        );
+        // ✅ Require Checkout for Upgrade Instead of Direct Update
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [{ price: STRIPE_PRICE_ID_PREMIUM, quantity: 1 }],
+          mode: "subscription",
+          success_url: `${BACK_END}/api/payment/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${FRONT_END}/home`,
+          metadata: { userId, subscriptionType },
+        });
 
-        existingSubscription.subscription_type = "premium";
-        existingSubscription.stripeSubscriptionId = updatedSubscription.id;
-        await existingSubscription.save();
-
-        return res.json({ message: "Subscription upgraded successfully." });
+        return res.json({ url: session.url }); // Redirect user to checkout
       }
 
       // ❌ Prevent Pro → Pro upgrades
@@ -62,7 +62,7 @@ router.post("/create-checkout-session", express.json(), async (req, res) => {
             },
           ],
           mode: "subscription",
-          success_url: `${BACK_END}/payment/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          success_url: `${BACK_END}/api/payment/payment-success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${FRONT_END}/home`,
           metadata: { userId, subscriptionType },
         });
@@ -169,8 +169,8 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       case 'checkout.session.completed': {
         console.log("✅ New subscription started!");
 
-        if (!eventData.metadata?.userId || !eventData.subscription) {
-          console.error("🚨 Missing metadata or subscription ID in checkout.session.completed");
+        if (!eventData.metadata?.userId || !eventData.subscription || eventData.payment_status !== "paid") {
+          console.error("🚨 Missing metadata or subscription ID, or payment not completed in checkout.session.completed");
           return res.status(400).send("Missing required metadata.");
         }
 
@@ -222,7 +222,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         // ✅ If no active subscription, create a new one
         const startDate = new Date();
         const endDate = new Date(eventData.current_period_end * 1000);
-        
+
         if (subscriptionType === "pro" || subscriptionType === "premium") {
           endDate.setFullYear(startDate.getFullYear() + 1);
         }
@@ -291,42 +291,42 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
         // Find the canceled subscription
         const canceledSubscription = await Subscription.findOneAndUpdate(
-            { stripeSubscriptionId: eventData.id },
-            { status_type: "canceled", canceledAt: new Date() },
-            { new: true }
+          { stripeSubscriptionId: eventData.id },
+          { status_type: "canceled", canceledAt: new Date() },
+          { new: true }
         );
-    
+
         if (!canceledSubscription) {
-            console.error("🚨 Subscription not found.");
-            return res.status(404).send("Subscription not found.");
+          console.error("🚨 Subscription not found.");
+          return res.status(404).send("Subscription not found.");
         }
-    
+
         // Check if the user has any active subscriptions left
         const activeSubscriptions = await Subscription.find({
-            user_id: canceledSubscription.user_id,
-            status_type: "active",
+          user_id: canceledSubscription.user_id,
+          status_type: "active",
         });
-    
+
         if (activeSubscriptions.length === 0) {
-            console.log("🔄 No active subscriptions found. Reverting user to Free Plan.");
-    
-            // Create a new Free subscription entry if the user has no active plans
-            const newFreeSubscription = new Subscription({
-                user_id: canceledSubscription.user_id,
-                customer_id: canceledSubscription.customer_id || eventData.customer,
-                subscription_type: "free",
-                status_type: "active",
-                start_date: new Date(),
-                end_date: null, // Free plan has no expiry
-                stripeSubscriptionId: null,
-                cancelAtPeriodEnd: false,
-                lastPayment: null,
-            });
-    
-            await newFreeSubscription.save();
-            console.log("✅ User reverted to Free Plan.");
+          console.log("🔄 No active subscriptions found. Reverting user to Free Plan.");
+
+          // Create a new Free subscription entry if the user has no active plans
+          const newFreeSubscription = new Subscription({
+            user_id: canceledSubscription.user_id,
+            customer_id: canceledSubscription.customer_id || eventData.customer,
+            subscription_type: "free",
+            status_type: "active",
+            start_date: new Date(),
+            end_date: null, // Free plan has no expiry
+            stripeSubscriptionId: null,
+            cancelAtPeriodEnd: false,
+            lastPayment: null,
+          });
+
+          await newFreeSubscription.save();
+          console.log("✅ User reverted to Free Plan.");
         } else {
-            console.log("✅ User still has an active subscription. No action needed.");
+          console.log("✅ User still has an active subscription. No action needed.");
         }
       }
 

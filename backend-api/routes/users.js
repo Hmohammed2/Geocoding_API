@@ -4,6 +4,8 @@ const express = require("express");
 const mongoose = require('mongoose')
 const router = express();
 
+router.use(express.json())
+
 const getUserWithSubscription = async (userId) => {
     try {
       const user = await User.findById(userId)

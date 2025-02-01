@@ -11,6 +11,7 @@ import DashboardLayout from "./pages/DashboardLayout"
 import LoginConfirmation from "./pages/LoginConfirmation"
 import PaymentConfirmation from "./pages/PaymentConfirmation"
 import RegisterConfirmation from "./pages/RegisterConfirmation"
+import TermsAndServices from "./pages/TermsAndServices"
 
 function App() {
 
@@ -30,6 +31,7 @@ function App() {
           <Route path="/documentation" element={<Documentation />} />{" "}
           <Route path="/contact" element={<ContactPage />} />{" "}
           <Route path="/profile" element={<DashboardLayout />} />{" "}
+          <Route path="/terms" element={<TermsAndServices />} />{" "}
         </Routes>
         <Footer />
       </>

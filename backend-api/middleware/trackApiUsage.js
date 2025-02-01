@@ -23,13 +23,19 @@ const trackApiUsage = async (req, res, next) => {
     // Determine request count (default to 1 for normal requests)
     let requestCount = 1;
 
-    // **Handle batch JSON geocoding (multiple addresses)**
+    // Handle batch JSON geocoding (multiple addresses)
     if (req.body.addresses && Array.isArray(req.body.addresses)) {
       requestCount = req.body.addresses.length;
     }
 
+    // Short-circuit the tracking if the response is already finished with an error (e.g., 403)
     res.on('finish', async () => {
-      // Log API usage **per individual request**
+      if (res.statusCode === 403 || res.statusCode >= 400) {
+        // Don't log if status is 403 or any other error status
+        return;
+      }
+
+      // Log API usage per individual request
       const logs = Array.from({ length: requestCount }).map(() => ({
         user_id: user._id,
         endpoint: originalUrl,

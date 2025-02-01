@@ -1,10 +1,36 @@
 import React from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 
 const LandingPage = () => {
     const navigate = useNavigate()
     return (
         <div className="bg-gray-50 text-gray-800">
+            {/* SEO Optimization */}
+            <Helmet>
+                {/* Primary Meta Tags */}
+                <title>GeoCode API - Fast & Accurate Geolocation Services</title>
+                <meta name="description" content="GeoCode API provides precise geolocation and address lookup services for developers and businesses. Try it for free!" />
+                <meta name="keywords" content="geocode, geolocation, API, mapping, address lookup, location services" />
+                <meta name="author" content="GeoCode API Team" />
+                <meta name="robots" content="index, follow" />
+
+                {/* Open Graph / Facebook */}
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="GeoCode API - Fast & Accurate Geolocation Services" />
+                <meta property="og:description" content="GeoCode API provides precise geolocation and address lookup services for developers and businesses. Try it for free!" />
+                <meta property="og:image" content="https://simplegeoapi.com/og-image.jpg" />
+                <meta property="og:url" content="https://simplegeoapi.com" />
+
+                {/* Twitter Meta Tags */}
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content="GeoCode API - Fast & Accurate Geolocation Services" />
+                <meta name="twitter:description" content="GeoCode API provides precise geolocation and address lookup services for developers and businesses. Try it for free!" />
+                <meta name="twitter:image" content="https://simplegeoapi.com/og-image.jpg" />
+
+                {/* Canonical Tag (Prevents Duplicate Content Issues) */}
+                <link rel="canonical" href="https://simplegeoapi.com" />
+            </Helmet>
             {/* Hero Section */}
             <header className="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
                 <div className="max-w-7xl mx-auto px-6 py-12 lg:py-20 flex flex-col md:flex-row items-center justify-between">
@@ -18,7 +44,7 @@ const LandingPage = () => {
                             you covered.
                         </p>
                         <button className="bg-white text-blue-600 font-semibold py-3 px-6 rounded-md shadow-md hover:bg-gray-100"
-                            onClick={() => {navigate("/register")}}>
+                            onClick={() => { navigate("/register") }}>
                             Get Started for Free
                         </button>
                     </div>
@@ -30,6 +56,7 @@ const LandingPage = () => {
                             src="https://media.istockphoto.com/id/1781263370/vector/track-navigation-pins-on-isometric-street-maps-navigate-mapping-technology-locate-position.jpg?s=612x612&w=0&k=20&c=1mhXOIbT52wY1rOaXLNQawEgicTPRcQjq_s06ePTNiA="
                             alt="Geocode API"
                             className="rounded-lg shadow-lg object-cover w-full h-64 md:h-full lg:h-[400px]"
+                            loading="lazy"
                         />
                     </div>
                 </div>
@@ -145,7 +172,7 @@ const LandingPage = () => {
                         Ready to start building with our Geocoding API?
                     </h2>
                     <button className="bg-white text-blue-600 font-semibold py-3 px-6 rounded-md shadow-md hover:bg-gray-100"
-                    onClick={() => {navigate("/register")}}>
+                        onClick={() => { navigate("/register") }}>
                         Get Started Now
                     </button>
                 </div>

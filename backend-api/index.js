@@ -16,7 +16,7 @@ const app = express()
 const corsOptions = {
     origin: process.env.FRONT_END, // Replace with your frontend's origin
     allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'], // Headers needed by your app and Stripe
-    credentials: true,              // Allow cookies and credentials
+    credentials: true,  // Allow cookies and credentials
   };
 
 app.use(cors(corsOptions));
@@ -28,11 +28,11 @@ const paymentRoutes = require('./routes/payment')
 const userRoutes = require('./routes/users')
 const apiRoutes = require('./routes/apiusage')
 
-app.use('/api/v1', geocodeRoutes)
-app.use('/auth', authRoutes)
-app.use("/payment", paymentRoutes)
-app.use("/users", userRoutes)
-app.use('/api', apiRoutes)
+app.use("/api/v1", geocodeRoutes)
+app.use("/api/auth", authRoutes)
+app.use("/api/payment", paymentRoutes)
+app.use("/api/users", userRoutes)
+app.use("/api/usage", apiRoutes)
 
 app.listen(PORT, () => {
     console.log(`Server listening at: ${PORT}`)

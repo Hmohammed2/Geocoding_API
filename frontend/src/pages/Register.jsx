@@ -3,6 +3,7 @@ import { countries } from '../data/data';
 import { FaUser } from "react-icons/fa";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 
 const Register = () => {
     const navigate = useNavigate()
@@ -52,7 +53,7 @@ const Register = () => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/auth/register`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`,
                 JSON.stringify(formData),
                 { headers: { "Content-Type": "application/json" } }
             );
@@ -94,7 +95,16 @@ const Register = () => {
         }
     };
 
-    return (
+    return (<>
+        <Helmet>
+            <title>Register - Create Your Account</title>
+            <meta name="description" content="Sign up for an account to access our services and features." />
+            <meta name="keywords" content="register, sign up, create account" />
+            <meta property="og:title" content="Register - Create Your Account" />
+            <meta property="og:description" content="Sign up for an account to access our services and features." />
+            <meta property="og:type" content="website" />
+            <link rel="canonical" href="https://simplegeoapi.com/register" />
+        </Helmet>
         <div className="flex items-center justify-center h-screen border">
             <div className="w-96 p-6 shadow-lg bg-white rounded-md">
                 <h1 className="text-3xl flex justify-center text-center font-semibold gap-2 mb-4">
@@ -202,6 +212,7 @@ const Register = () => {
                 </form>
             </div>
         </div>
+    </>
     );
 };
 

@@ -6,7 +6,7 @@ const Subscription = require("../models/Subscription");
 const { body, validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const cookieParser = require('cookie-parser');
-const { generateApiKey, encrypt, decrypt } = require('../utils/apiKey')
+const generateApiKey  = require('../utils/apiKey')
 
 const router = express();
 router.use(cookieParser()); // This should be before your routes that need cookies
@@ -42,7 +42,6 @@ router.post("/register", async (req, res) => {
 
         // Generate and Encrypt API Key
         const apiKey = generateApiKey();
-        const encryptedApiKey = encrypt(apiKey);
 
         // ✅ Create new user
         const newUser = new User({
@@ -50,8 +49,7 @@ router.post("/register", async (req, res) => {
             password: hashedPassword,
             email,
             location,
-            apiKey: encryptedApiKey,
-            isPayingCustomer: "no"
+            apiKey
         });
 
         await newUser.save();
@@ -156,40 +154,5 @@ router.get("/verify-token", async (req, res) => {
         res.status(401).json({ message: "Invalid or expired token" });
     }
 });
-
-// **🔹 API Endpoint to Retrieve API Key**
-router.get("/get-api-key", async (req, res) => {
-    const { email, userId } = req.query; // Get user identifier from query params
-
-    try {
-        if (!email && !userId) {
-            return res.status(400).json({ message: "Email or User ID is required." });
-        }
-
-        // Find user by email or userId
-        const user = await User.findOne({ $or: [{ email }, { _id: userId }] });
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
-
-        if (!user.apiKey) {
-            return res.status(400).json({ message: "API Key not found for this user." });
-        }
-
-        // Decrypt API key
-        const decryptedApiKey = decrypt(user.apiKey);
-
-        if (!decryptedApiKey) {
-            return res.status(500).json({ message: "Failed to decrypt API key." });
-        }
-
-        res.status(200).json({ apiKey: decryptedApiKey });
-    } catch (error) {
-        console.error("Error retrieving API Key:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-});
-
 
 module.exports = router;
