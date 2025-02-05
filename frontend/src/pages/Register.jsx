@@ -1,12 +1,15 @@
-import { React, useState } from 'react'
+import { React, useState } from 'react';
 import { countries } from '../data/data';
 import { FaUser } from "react-icons/fa";
-import axios from "axios";
-import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { useNavigate } from 'react-router-dom';
+import axios from "axios";
+import { useAlert } from '../components/contexts/AlertContext';
+import Alert from "../components/Alert";
 
 const Register = () => {
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+    const { alert, showAlert } = useAlert();
     const [formData, setFormData] = useState({
         userName: "",
         email: "",
@@ -14,10 +17,8 @@ const Register = () => {
         confirmPassword: "",
         location: ""
     });
-
-
-    const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState({});
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -39,15 +40,12 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Validate the form and set errors if any
         const formErrors = validate();
         if (Object.keys(formErrors).length > 0) {
             setErrors(formErrors);
             return;
         }
 
-        // Reset errors and mark as submitting
         setErrors({});
         setIsSubmitting(true);
 
@@ -58,162 +56,123 @@ const Register = () => {
                 { headers: { "Content-Type": "application/json" } }
             );
 
-            console.log("Response data:", response.data); // Debugging line
-
-            if (response.status !== 201) {
-                alert(`Registration failed: ${response.status}`);
+            if (response.status === 201) {
+                navigate("/register-confirm");
             } else {
-                navigate("/register-confirm")
+                showAlert(`Registration failed: ${response.status}`, "error");
             }
-
         } catch (error) {
-            handleError(error);
+            showAlert(error.message, "error");
+            console.error("Registration failed:", error);
         } finally {
-            setIsSubmitting(false); // Ensure `isSubmitting` is reset regardless of success or error
+            setIsSubmitting(false);
         }
     };
 
-    // Helper function to handle errors
-    const handleError = (error) => {
-        if (error.response) {
-            const { code, message } = error.response.data;
-
-            // Handle duplicate key error
-            if (code === 11000) {
-                alert(message || "User already exists.");
-            } else {
-                alert(`Error: ${message || "An error occurred. Please try again later."}`);
-            }
-        } else if (error.request) {
-            // Request was made but no response received
-            console.error("No response received:", error.request);
-            alert("No response from server. Please check your connection.");
-        } else {
-            // Unexpected error
-            console.error("Unexpected error:", error.message);
-            alert("An unexpected error occurred. Please try again.");
-        }
-    };
-
-    return (<>
-        <Helmet>
-            <title>Register - Create Your Account</title>
-            <meta name="description" content="Sign up for an account to access our services and features." />
-            <meta name="keywords" content="register, sign up, create account" />
-            <meta property="og:title" content="Register - Create Your Account" />
-            <meta property="og:description" content="Sign up for an account to access our services and features." />
-            <meta property="og:type" content="website" />
-            <link rel="canonical" href="https://simplegeoapi.com/register" />
-        </Helmet>
-        <div className="flex items-center justify-center h-screen border">
-            <div className="w-96 p-6 shadow-lg bg-white rounded-md">
-                <h1 className="text-3xl flex justify-center text-center font-semibold gap-2 mb-4">
-                    <FaUser />
-                    Create an Account
-                </h1>
-                <form onSubmit={handleSubmit}>
-                    <div className="mt-3">
-                        <label htmlFor="username" className="block text-base mb-2">
-                            Username
-                        </label>
-                        <input
-                            type="text"
-                            name="userName"
-                            placeholder="Enter Username..."
-                            id="username"
-                            className="border w-full text-base px-2 focus:outline-none focus:ring-0 focus:border-blue-500 focus:border-2 rounded-md"
-                            value={formData.userName}
-                            onChange={handleChange}
-                        />
-                        {errors.userName && (
-                            <p className="text-red-500 text-sm">{errors.userName}</p>
-                        )}
-                    </div>
-                    <div className="mt-3">
-                        <label htmlFor="email" className="block text-base mb-2">
-                            Email Address
-                        </label>
-                        <input
-                            type="text"
-                            name="email"
-                            placeholder="Enter email address..."
-                            id="email"
-                            className="border w-full text-base px-2 focus:outline-none focus:ring-0 focus:border-blue-500 focus:border-2 rounded-md"
-                            value={formData.email}
-                            onChange={handleChange}
-                        />
-                        {errors.email && (
-                            <p className="text-red-500 text-sm">{errors.email}</p>
-                        )}
-                    </div>
-                    <div className="mt-3">
-                        <label htmlFor="password" className="block text-base mb-2">
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            name="password"
-                            placeholder="Enter password..."
-                            id="password"
-                            className="border w-full text-base px-2 focus:outline-none focus:ring-0 focus:border-blue-500 focus:border-2 rounded-md"
-                            value={formData.password}
-                            onChange={handleChange}
-                        />
-                        {errors.password && (
-                            <p className="text-red-500 text-sm">{errors.password}</p>
-                        )}
-                    </div>
-                    <div className="mt-3">
-                        <label htmlFor="confirmPassword" className="block text-base mb-2">
-                            Confirm Password
-                        </label>
-                        <input
-                            type="password"
-                            name="confirmPassword"
-                            placeholder="Confirm your password..."
-                            id="confirmPassword"
-                            className="border w-full text-base px-2 focus:outline-none focus:ring-0 focus:border-blue-500 focus:border-2 rounded-md"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                        />
-                        {errors.confirmPassword && (
-                            <p className="text-red-500 text-sm">{errors.confirmPassword}</p>
-                        )}
-                    </div>
-                    <div className="mt-3">
-                        <label htmlFor="location" className="block text-base mb-2 mt-2">
-                            Location
-                        </label>
-                        <select
-                            name="location"
-                            className="border w-full text-base px-2 focus:outline-none focus:ring-0 focus:border-blue-500 focus:border-2 py-2 rounded-md"
-                            id="location"
-                            value={formData.location}
-                            onChange={handleChange}
-                        >
-                            <option value="default" disabled>Select location</option>
-                            {countries.map((item, index) => (
-                                <option key={index} value={item}>
-                                    {item}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="mt-5">
-                        <button
-                            className={`border ${isSubmitting ? "bg-gray-500" : "bg-white"
-                                } text-blue-600 font-semibold py-3 px-6 rounded-md shadow-md hover:bg-gray-100 w-full`}
-                            type="submit"
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? "Creating Account..." : "Create Account"}
-                        </button>
-                    </div>
-                </form>
+    return (
+        <>
+            <Helmet>
+                <title>Register Your Account - SimpleGeoAPI</title>
+                <meta name="description" content="Sign up to create your account on SimpleGeoApi." />
+                <meta name="keywords" content="register, sign up, create account, SimpleGeoApi" />
+                <meta property="og:title" content="Register - SimpleGeoAPI" />
+                <meta property="og:description" content="Sign up for an account on SimpleGeoApi" />
+                <meta name="robots" content="index, follow" />
+                <link rel="canonical" href="https://simplegeoapi.com/register" />
+            </Helmet>
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                {/* Render alert component */}
+                {alert && <Alert />}
+                <div className="w-96 p-8 bg-white rounded-xl shadow-2xl transform transition-all duration-300 hover:scale-105">
+                    <h1 className="text-4xl text-center font-semibold text-gray-800 mb-6 flex justify-center items-center gap-2">
+                        <FaUser className="text-indigo-600" />
+                        Create an Account
+                    </h1>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label htmlFor="username" className="block text-lg font-medium text-gray-700 mb-2">Username</label>
+                            <input
+                                type="text"
+                                name="userName"
+                                placeholder="Enter Username..."
+                                id="username"
+                                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                                value={formData.userName}
+                                onChange={handleChange}
+                            />
+                            {errors.userName && <p className="text-red-500 text-sm">{errors.userName}</p>}
+                        </div>
+                        <div>
+                            <label htmlFor="email" className="block text-lg font-medium text-gray-700 mb-2">Email Address</label>
+                            <input
+                                type="text"
+                                name="email"
+                                placeholder="Enter Email..."
+                                id="email"
+                                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                                value={formData.email}
+                                onChange={handleChange}
+                            />
+                            {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+                        </div>
+                        <div>
+                            <label htmlFor="password" className="block text-lg font-medium text-gray-700 mb-2">Password</label>
+                            <input
+                                type="password"
+                                name="password"
+                                placeholder="Enter password..."
+                                id="password"
+                                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                                value={formData.password}
+                                onChange={handleChange}
+                            />
+                            {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+                        </div>
+                        <div>
+                            <label htmlFor="confirmPassword" className="block text-lg font-medium text-gray-700 mb-2">Confirm Password</label>
+                            <input
+                                type="password"
+                                name="confirmPassword"
+                                placeholder="Confirm your password..."
+                                id="confirmPassword"
+                                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                            />
+                            {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword}</p>}
+                        </div>
+                        <div>
+                            <label htmlFor="location" className="block text-lg font-medium text-gray-700 mb-2">Location</label>
+                            <select
+                                name="location"
+                                id="location"
+                                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                                value={formData.location}
+                                onChange={handleChange}
+                            >
+                                <option value="" disabled>Select your location</option>
+                                {/* Assuming you have a list of countries */}
+                                {countries.map((item, index) => (
+                                    <option key={index} value={item}>
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <button
+                                type="submit"
+                                className="w-full bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 transition duration-200"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? "Creating Account..." : "Create Account"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
-    </>
+        </>
     );
 };
 
-export default Register
+export default Register;

@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-    userName: { type: String, required: true, index: true },
+    userName: { type: String, required: true },
     firstName: { type: String },
     lastName: { type: String },
+    role: {type: String, enum: ['admin', 'user'], default: 'user'},
     email: { type: String, required: true, unique: true, index: true },
     apiKey: { type: String, unique: true, index: true}, // Add API key field
     location: { type: String },

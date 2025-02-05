@@ -32,7 +32,7 @@ const LandingPage = () => {
                 <link rel="canonical" href="https://simplegeoapi.com" />
             </Helmet>
             {/* Hero Section */}
-            <header className="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
+            <header className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white">
                 <div className="max-w-7xl mx-auto px-6 py-12 lg:py-20 flex flex-col md:flex-row items-center justify-between">
                     <div className="md:w-1/2 my-10 md:my-0">
                         <h1 className="text-4xl lg:text-6xl font-bold mb-4">
@@ -142,7 +142,7 @@ const LandingPage = () => {
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[
-                            { name: "Free", price: "$0", features: ["1,000 requests/month", "Standard response time", "Community support"] },
+                            { name: "Free", price: "£0", features: ["1,000 requests/month", "Standard response time", "Community support"] },
                             { name: "Pro", price: "£19.99", features: ["50,000 requests/month", "Faster response time", "Email support"] },
                             { name: "Premium", price: "£69.99", features: ["250,000 requests/month", "Priority support", "Advanced analytics"] },
                         ].map((plan, index) => (
@@ -166,7 +166,7 @@ const LandingPage = () => {
             </section>
 
             {/* Call to Action */}
-            <footer className="bg-blue-600 text-white py-12">
+            <footer className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white py-12">
                 <div className="max-w-6xl mx-auto text-center">
                     <h2 className="text-3xl font-bold mb-4">
                         Ready to start building with our Geocoding API?

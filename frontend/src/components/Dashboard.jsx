@@ -185,62 +185,43 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <main className="max-w-7xl mx-auto px-6 py-8">
+    <div className="min-h-screen">
+      <main className="max-w-6xl mx-auto px-6 py-10">
+        {/* Profile Card */}
         <section className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-bold mb-4">Your Profile</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">Your Profile</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <p>
-                <span className="font-semibold">Name:</span> {user.userName || "N/A"}
-              </p>
-              <p>
-                <span className="font-semibold">Email:</span> {user.email || "N/A"}
-              </p>
+              <p className="text-gray-700"><span className="font-semibold">Name:</span> {user.userName || "N/A"}</p>
+              <p className="text-gray-700"><span className="font-semibold">Email:</span> {user.email || "N/A"}</p>
             </div>
             <div>
-              <p>
-                <span className="font-semibold">Plan:</span>{" "}
-                {activeSubscription?.subscription_type === "free" ? "Free Plan" : `${activeSubscription?.subscription_type || "N/A"} plan`}
-              </p>
-              <p>
-                <span className="font-semibold">Renew Date:</span>{" "}
-                {activeSubscription?.subscription_type === ""
-                  ? "N/A"
-                  : activeSubscription?.end_date
-                    ? new Date(user.subscription[0].end_date).toLocaleDateString("en-GB", {
-                      year: "numeric",
-                      month: "short",
-                      day: "2-digit",
-                    }).replace(',', '') // This will format to 'yyyy-Mmm-dd' like '2025-Jan-23'
-                    : "N/A"}
-              </p>
+              <p className="text-gray-700"><span className="font-semibold">Plan:</span> {activeSubscription?.subscription_type === "free" ? "Free Plan" : `${activeSubscription?.subscription_type || "N/A"} Plan`}</p>
+              <p className="text-gray-700"><span className="font-semibold">Renew Date:</span> {activeSubscription?.end_date ? new Date(activeSubscription.end_date).toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "2-digit" }) : "N/A"}</p>
             </div>
           </div>
         </section>
 
+        {/* API Usage Cards */}
         <section>
-          <h2 className="text-xl font-bold mb-4">API Usage</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">API Usage</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <UsageCard
-              title="Total Requests"
-              value={usageData?.totalRequestsThisMonth || 0}  // Show total requests for the month
-              description="Total API requests made this month"
-            />
-            <UsageCard
-              title="Requests Today"
-              value={usageData?.requestsToday || 0}
-              description="API requests made today"
-            />
-            <UsageCard
-              title="Requests Remaining"
-              value={usageData?.requestsRemaining || 0}
-              description="Requests left in your current plan"
-            />
+            {[
+              { title: "Total Requests", value: usageData?.totalRequestsThisMonth || 0, description: "Total API requests made this month" },
+              { title: "Requests Today", value: usageData?.requestsToday || 0, description: "API requests made today" },
+              { title: "Requests Remaining", value: usageData?.requestsRemaining || 0, description: "Requests left in your current plan" },
+            ].map((item, index) => (
+              <div key={index} className="bg-white p-6 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold text-gray-800">{item.title}</h3>
+                <p className="text-3xl font-bold text-blue-600 mt-2">{item.value}</p>
+                <p className="text-gray-600 text-sm">{item.description}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md" style={{ height: '400px' }}>
-            <h3 className="text-lg font-bold mb-4">API Usage History</h3>
+          {/* Usage Graph */}
+          <div className="bg-white p-6 rounded-lg shadow-md h-96">
+            <h3 className="text-lg font-bold mb-4 text-gray-800">API Usage History</h3>
             <Line data={chartData} options={chartOptions} />
           </div>
         </section>

@@ -3,6 +3,8 @@ const Geocode = require("../models/Geocode");
 const express = require("express");
 const mongoose = require('mongoose')
 const router = express();
+const checkAdmin = require('../middleware/checkAdmin')
+const sendEmail = require('../utils/sendEmail')
 
 router.use(express.json())
 
@@ -26,7 +28,7 @@ const getUserWithSubscription = async (userId) => {
     }
   };
 
-router.get('/data', async (req, res) => {
+router.get('/data', checkAdmin, async (req, res) => {
     try {
         const user = await User.find({})
         .populate({
@@ -100,7 +102,7 @@ router.put('/update', async (req, res) => {
     }
 })
 
-router.get('/geocode-data', async (req, res) => {
+router.get('/geocode-data', checkAdmin, async (req, res) => {
     try {
         const allData = await Geocode.find({});
         res.json(allData);
@@ -109,5 +111,80 @@ router.get('/geocode-data', async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 })
+
+router.delete('/delete', async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ message: 'No user ID provided' });
+        }
+
+        const deletedUser = await User.findByIdAndDelete(userId);
+
+        if (!deletedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// API Endpoint to send emails
+router.post("/send-email", async (req, res) => {
+    const { name, email, message } = req.body;
+
+    if (!name || !email || !message) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>New Contact Form Submission</title>
+            <style>
+                body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+                .container { max-width: 600px; background: #ffffff; padding: 20px; margin: 0 auto; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+                h2 { color: #333; }
+                .details { margin-top: 20px; padding: 15px; background: #f9f9f9; border-left: 4px solid #007BFF; }
+                .footer { margin-top: 20px; font-size: 12px; color: #777; text-align: center; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>New Contact Form Submission</h2>
+                <p>You have received a new message from your website contact form.</p>
+                <div class="details">
+                    <p><strong>Name:</strong> ${name}</p>
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>Message:</strong></p>
+                    <p>${message}</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2025 SimpleGeoAPI. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    try {
+        await sendEmail(
+            "info@simplegeoapi.com", // Replace with your own email
+            `New Contact Form Submission from ${name}`,
+            `Name: ${name}\nEmail: ${email}\nMessage:\n${message}`, htmlContent
+        );
+        res.status(200).json({ success: "Email sent successfully!" });
+    } catch (error) {
+        console.error("Email sending error:", error);
+        res.status(500).json({ error: "Failed to send email" });
+    }
+});
 
 module.exports = router

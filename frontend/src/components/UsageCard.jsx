@@ -1,4 +1,12 @@
 import React from "react";
+/**
+ * 
+ * 
+ * @param {string} title: title of the usage card
+ * @param {string} value: value shown in currency within the usage card
+ * @param {string} description: description of the usage card
+ */
+
 
 const UsageCard = ({ title, value, description }) => {
   return (

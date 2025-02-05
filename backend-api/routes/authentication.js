@@ -6,7 +6,8 @@ const Subscription = require("../models/Subscription");
 const { body, validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const cookieParser = require('cookie-parser');
-const generateApiKey  = require('../utils/apiKey')
+const generateApiKey = require('../utils/apiKey')
+const sendEmail = require('../utils/sendEmail')
 
 const router = express();
 router.use(cookieParser()); // This should be before your routes that need cookies
@@ -40,8 +41,105 @@ router.post("/register", async (req, res) => {
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Generate and Encrypt API Key
+        // Generate API Key
         const apiKey = generateApiKey();
+
+        const textContent = `Dear User,
+
+        Thank you for signing up. Below is your unique API key:
+
+        🔑 ${apiKey}
+
+        Please keep this key safe and do not share it with anyone. This key grants access to your account and should be treated like a password.
+
+        For security reasons:
+        - Do not share it publicly or with untrusted sources.
+        - Store it securely (e.g., in a password manager).
+        - If you suspect any unauthorized access, regenerate a new API key immediately.
+
+        If you need any assistance, feel free to contact our support team.
+
+        Best regards,  
+        SimpleGeoAPI`;
+
+        const htmlContent = `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Your API Key - Keep it Safe</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    margin: 0;
+                    padding: 0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 20px auto;
+                    background: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                }
+                h2 {
+                    color: #333;
+                }
+                .api-key {
+                    font-size: 18px;
+                    font-weight: bold;
+                    color: #d63384;
+                    background: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 5px;
+                    text-align: center;
+                    margin: 15px 0;
+                }
+                p {
+                    color: #555;
+                    line-height: 1.6;
+                }
+                .footer {
+                    margin-top: 20px;
+                    font-size: 14px;
+                    color: #888;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>Your API Key - Keep it Safe</h2>
+                <p>Dear User,</p>
+                <p>Thank you for signing up. Below is your unique API key:</p>
+                
+                <div class="api-key">
+                    🔑 <strong>${apiKey}</strong>
+                </div>
+
+                <p><strong>For security reasons:</strong></p>
+                <ul>
+                    <li>Do not share it publicly or with untrusted sources.</li>
+                    <li>Store it securely (e.g., in a password manager).</li>
+                    <li>If you suspect any unauthorized access, regenerate a new API key immediately.</li>
+                </ul>
+
+                <p>If you need any assistance, feel free to contact our support team.</p>
+
+                <p>Best regards,</p>
+                <p><strong>SimpleGeoAPI Team</strong></p>
+
+                <div class="footer">
+                    &copy; 2024 SimpleGeoAPI. All rights reserved.
+                </div>
+            </div>
+        </body>
+        </html>`;
+
+        await sendEmail(`${email}`,"Your API Key - Keep it Safe", textContent ,htmlContent)
+
+        // Hash the ApiKey
+        const hashedApiKey = await bcrypt.hash(apiKey, 10);
 
         // ✅ Create new user
         const newUser = new User({
@@ -49,7 +147,7 @@ router.post("/register", async (req, res) => {
             password: hashedPassword,
             email,
             location,
-            apiKey
+            apiKey: hashedApiKey
         });
 
         await newUser.save();

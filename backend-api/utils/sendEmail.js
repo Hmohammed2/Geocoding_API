@@ -1,20 +1,25 @@
 const nodemailer = require("nodemailer");
 
-const sendEmail = async (to, subject, text) => {
+const sendEmail = async (to, subject, textContent, htmlContent) => {
     try {
         const transporter = nodemailer.createTransport({
-            service: "gmail",
+            host: "smtp.privateemail.com",
+            port: 465, // or 587 if you prefer STARTTLS
+            secure: true, // Set to true for 465 (SSL), false for 587 (STARTTLS)
             auth: {
-                user: process.env.EMAIL_USER, // Set this in .env
-                pass: process.env.EMAIL_PASS, // Set this in .env
+                user: process.env.EMAIL_USER, // Your PrivateEmail email address
+                pass: process.env.EMAIL_PASS, // Your PrivateEmail password
             },
+            logger: true,  // Enable debugging logs
+            debug: true,
         });
 
         await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+            from: '"SimpleGeoAPI" <info@simplegeoapi.com>', // Ensure this matches your domain
             to,
             subject,
-            text,
+            text: textContent,
+            html: htmlContent
         });
 
         console.log(`📧 Email sent to ${to}`);

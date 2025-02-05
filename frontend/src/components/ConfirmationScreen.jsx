@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * ConfirmationScreen component displays a confirmation message and redirects the user after a delay.
+ *
+ * @component
+ * @param {Object} props - Component props
+ * @param {string} props.title - Title of the confirmation screen
+ * @param {string} props.message - Message displayed to the user
+ * @param {string} props.redirectPath - Path to redirect the user after the delay
+ * @returns {JSX.Element} The rendered ConfirmationScreen component.
+ */
 const ConfirmationScreen = ({ title, message, redirectPath }) => {
     const navigate = useNavigate();
     const [dots, setDots] = useState('');
@@ -23,7 +33,7 @@ const ConfirmationScreen = ({ title, message, redirectPath }) => {
     }, [navigate, redirectPath]);
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
             <div className="bg-white shadow-lg rounded-lg p-6 text-center max-w-md">
                 <h2 className="text-2xl font-semibold text-blue-500">{title}</h2>
                 <p className="mt-2 text-gray-600">{message}</p>
