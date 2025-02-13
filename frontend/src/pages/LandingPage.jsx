@@ -156,7 +156,7 @@ const LandingPage = () => {
                                         </li>
                                     ))}
                                 </ul>
-                                <button className="mt-6 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">
+                                <button onClick={() => { navigate("/pricing") }} className="mt-6 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">
                                     Choose Plan
                                 </button>
                             </div>

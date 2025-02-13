@@ -1,15 +1,24 @@
 const axios = require('axios');
 const express = require('express');
 const Geocode = require('../models/Geocode')
+const fs = require('fs')
+const path = require("path");
 const crypto = require('crypto')
+const ExcelJS = require('exceljs');
 const multer = require('multer');
 const csvParser = require('csv-parser');
-const trackApiUsage = require('../middleware/trackApiUsage')
+const { trackApiUsage, trackBatchUsage } = require('../middleware/trackApiUsage')
 const verifyApiKey = require("../middleware/verifyApiKey"); // Adjust the path as needed
 const enforceApiLimit = require('../middleware/enforceApiLimit');
 const checkProOrPremium = require("../middleware/checkProOrPremium")
+const Papa = require('papaparse');
+
+// Load the appropriate .env file
+const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env.development";
+require('dotenv').config({ path: envFile });  // Make sure this is at the very top
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const backendUrl = process.env.BACK_END
 const router = express.Router()
 
 // Setup multer for file upload
@@ -17,14 +26,13 @@ const upload = multer({ dest: 'uploads/' });
 
 // Middleware
 router.use(express.json())
-router.use(trackApiUsage)
 router.use(verifyApiKey)
 router.use(enforceApiLimit)
 
 /**
  * Geocode an address to get its coordinates.
  */
-router.post('/geocode', async (req, res) => {
+router.post('/geocode', trackApiUsage, async (req, res) => {
     const { address } = req.body;
 
     if (!address) {
@@ -110,7 +118,7 @@ router.post('/geocode', async (req, res) => {
 /**
  * Reverse geocode coordinates to get the address.
  */
-router.post('/reverse-geocode', async (req, res) => {
+router.post('/reverse-geocode', trackApiUsage, async (req, res) => {
     const { lat, lng } = req.body;
 
     if (!lat || !lng) {
@@ -169,98 +177,261 @@ router.post('/reverse-geocode', async (req, res) => {
     }
 });
 /**
- * Geocode an address to get the coordinates. Endpoint allows batch process via flat file upload
+ * Batch geocode coordinates to get the address. Supports excel workbooks
  */
-router.post('/batch-geocode', async (req, res) => {
+router.post('/batch-geocode-excel', upload.single('file'), trackBatchUsage, async (req, res) => {
     if (!req.file) {
-        return res.status(400).json({ error: 'CSV file is required.' });
+        return res.status(400).json({ error: 'Excel file is required.' });
     }
 
-    const results = [];
-    const errors = [];
+    try {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(req.file.path);
+        const sheet = workbook.worksheets[0];
 
-    // Parse CSV file to get the addresses
-    fs.createReadStream(req.file.path)
-        .pipe(csvParser())
-        .on('data', async (row) => {
-            const address = row.address; // Assume 'address' is the column in the CSV file
+        const headerRow = sheet.getRow(1);
+        const headers = headerRow.values;
+        const addressIndex = headers.indexOf("Address");
+        const suburbIndex = headers.indexOf("Suburb");
+        const stateIndex = headers.indexOf("State");
+        const postcodeIndex = headers.indexOf("Postcode");
 
-            if (!address) {
-                errors.push({ address, error: 'Address is missing.' });
-                return;
-            }
+        if (addressIndex === -1) {
+            return res.status(400).json({ error: "Invalid file format. 'Address' column is missing." });
+        }
 
-            // Normalize the address and create a hash
-            const formattedAddress = address.trim().toLowerCase(); // Normalize the address
+        let latIndex = headers.indexOf("Lat");
+        let longIndex = headers.indexOf("Long");
+
+        if (latIndex === -1) {
+            latIndex = headers.length;
+            headerRow.getCell(latIndex).value = "Lat";
+        }
+        if (longIndex === -1) {
+            longIndex = headers.length + 1;
+            headerRow.getCell(longIndex).value = "Long";
+        }
+
+        const useFullMapping = suburbIndex !== -1 && stateIndex !== -1 && postcodeIndex !== -1;
+        let processedCount = 0;
+
+        const geocodePromises = [];
+
+        for (let i = 2; i <= sheet.rowCount; i++) {
+            const row = sheet.getRow(i);
+            const addrValue = row.getCell(addressIndex).value;
+            if (!addrValue) continue;
+
+            let fullAddress = useFullMapping
+                ? `${addrValue}, ${row.getCell(suburbIndex).value}, ${row.getCell(stateIndex).value} ${row.getCell(postcodeIndex).value}, Australia`
+                : addrValue;
+
+            const formattedAddress = fullAddress.trim().toLowerCase();
             const addressHash = crypto.createHash('sha256').update(formattedAddress).digest('hex');
 
-            try {
-                // Step 1: Check if the address already exists in the database
-                const cachedResult = await Geocode.findOne({ addressHash });
+            const processRow = async () => {
+                try {
+                    let geocodeData = await Geocode.findOne({ addressHash });
 
-                if (cachedResult) {
-                    results.push({
-                        address: cachedResult.address,
-                        latitude: cachedResult.latitude,
-                        longitude: cachedResult.longitude,
-                        status: 'cached',
-                    });
-                } else {
-                    // Step 2: If not found in DB, pull from Google API
-                    const url = `https://maps.googleapis.com/maps/api/geocode/json`;
-                    const response = await axios.get(url, {
-                        params: { address, key: GOOGLE_API_KEY },
-                    });
+                    if (!geocodeData) {
+                        const response = await axios.get("https://maps.googleapis.com/maps/api/geocode/json", {
+                            params: { address: fullAddress, key: process.env.GOOGLE_API_KEY },
+                        });
 
-                    if (!response.data.results || response.data.results.length === 0) {
-                        errors.push({ address, error: 'No results found.' });
-                        return;
+                        if (!response.data.results?.length || response.data.status !== "OK") return;
+
+                        const location = response.data.results[0].geometry.location;
+
+                        geocodeData = await Geocode.findOneAndUpdate(
+                            { addressHash }, // Search by address hash
+                            {
+                                $setOnInsert: {
+                                    address: response.data.results[0].formatted_address,
+                                    latitude: location.lat,
+                                    longitude: location.lng,
+                                },
+                            },
+                            { upsert: true, new: true, setDefaultsOnInsert: true }
+                        );
                     }
 
-                    if (response.data.status !== 'OK') {
+                    row.getCell(latIndex).value = geocodeData.latitude;
+                    row.getCell(longIndex).value = geocodeData.longitude;
+                    processedCount++;
+                } catch (error) {
+                    console.error(`Error processing row ${i}:`, error);
+                }
+            };
+
+            geocodePromises.push(processRow());
+        }
+
+        // Wait for all geocode operations to complete, even if some fail
+        await Promise.allSettled(geocodePromises);
+
+        const outputPath = path.join(__dirname, "../uploads", `geocoded_${Date.now()}.xlsx`);
+
+        await workbook.xlsx.writeFile(outputPath);
+
+        fs.unlink(req.file.path, (err) => {
+            if (err) console.error("Error deleting original file:", err);
+        });
+
+        req.processedCount = processedCount;
+
+        return res.status(200).json({
+            message: "Batch geocoding completed.",
+            processedCount,
+            download: `${backendUrl}/uploads/${path.basename(outputPath)}`,
+        });
+
+    } catch (error) {
+        console.error("Error processing Excel file:", error);
+        return res.status(500).json({ error: "Server error processing the file." });
+    }
+});
+
+/**
+ * Geocode an address to get the coordinates. Endpoint allows batch process via flat file upload
+ */
+router.post("/batch-geocode", upload.single("file"), trackBatchUsage, async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: "CSV file is required." });
+    }
+
+    const {
+        addressColumn,
+        suburbColumn,
+        stateColumn,
+        postcodeColumn,
+    } = req.body;
+
+    const rows = [];
+    const errors = [];
+    let processedCount = 0;
+
+    // Read CSV File and store rows with BOM removal for header keys
+    try {
+        await new Promise((resolve, reject) => {
+            fs.createReadStream(req.file.path)
+                .pipe(csvParser({
+                    mapHeaders: ({ header }) => header.replace(/^\ufeff/, '')
+                }))
+                .on("data", (row) => rows.push(row))
+                .on("end", () => {
+                    console.log("Parsed CSV Rows:", rows); // 👈 Debugging step
+                    resolve();
+                })
+                .on("error", reject);
+        });
+
+        // Build geocoding promises
+        const geocodePromises = rows.map(async (row) => {
+            try {
+                let address = "";
+
+                if (suburbColumn && stateColumn && postcodeColumn) {
+                    const addr = row[addressColumn];
+                    const suburb = row[suburbColumn];
+                    const state = row[stateColumn];
+                    const postcode = row[postcodeColumn];
+
+                    if (!addr || !suburb || !state || !postcode) {
+                        errors.push({ row, error: "Missing one or more address components." });
+                        return null;
+                    }
+                    address = `${addr}, ${suburb}, ${state} ${postcode}`;
+                } else {
+                    address = row[addressColumn]
+                    if (!address) {
+                        errors.push({ row, error: "Address is missing." });
+                        return null;
+                    }
+                }
+
+                // Remove BOM character if it exists
+                address = address.replace(/^\ufeff/, '');  // Remove BOM character
+
+                // Make the address case-insensitive and strip unwanted characters
+                const formattedAddress = address
+                    .trim()               // Remove leading/trailing spaces
+                    .toLowerCase()        // Make the address lowercase
+                    .replace(/[^a-z0-9\s,]/g, '');  // Remove all non-alphanumeric characters except space and comma
+
+                const addressHash = crypto.createHash("sha256").update(formattedAddress).digest("hex");
+
+                let geocodeData = await Geocode.findOne({ addressHash });
+
+                if (!geocodeData) {
+                    const response = await axios.get("https://maps.googleapis.com/maps/api/geocode/json", {
+                        params: { address, key: process.env.GOOGLE_API_KEY },
+                    });
+
+                    if (!response.data.results || response.data.results.length === 0 || response.data.status !== "OK") {
                         errors.push({ address, error: `Geocoding failed: ${response.data.status}` });
-                        return;
+                        return null;
                     }
 
                     const location = response.data.results[0].geometry.location;
-                    const newGeocode = new Geocode({
-                        address: response.data.results[0].formatted_address,
-                        addressHash,
-                        latitude: location.lat,
-                        longitude: location.lng,
-                    });
-                    await newGeocode.save();
 
-                    results.push({
-                        address: newGeocode.address,
-                        latitude: newGeocode.latitude,
-                        longitude: newGeocode.longitude,
-                        status: 'new',
-                    });
+                    geocodeData = await Geocode.findOneAndUpdate(
+                        { addressHash }, // Search by address hash
+                        {
+                            $setOnInsert: {
+                                address: response.data.results[0].formatted_address,
+                                latitude: location.lat,
+                                longitude: location.lng,
+                            },
+                        },
+                        { upsert: true, new: true, setDefaultsOnInsert: true }
+                    );
                 }
+
+                processedCount++;
+                return {
+                    ...row,
+                    latitude: geocodeData.latitude,
+                    longitude: geocodeData.longitude,
+                    status: geocodeData.status || "cached",
+                };
             } catch (error) {
-                errors.push({ address, error: 'Server error during geocoding.' });
+                errors.push({ row, error: "Error processing row." });
                 console.error(error);
+                return null;
             }
-        })
-        .on('end', () => {
-            // Clean up the uploaded file
-            fs.unlinkSync(req.file.path);
-
-            if (errors.length > 0) {
-                return res.status(400).json({ message: 'Batch geocoding completed with errors.', errors, results });
-            }
-
-            return res.status(200).json({
-                message: 'Batch geocoding completed successfully.',
-                results,
-            });
         });
-})
+
+        // Wait for all geocode operations to complete
+        const results = (await Promise.all(geocodePromises)).filter(Boolean);
+
+        // Save results as CSV file
+        const outputPath = `uploads/geocoded_${Date.now()}.csv`;
+        const csvData = Papa.unparse(results);
+        fs.writeFileSync(outputPath, csvData);
+
+        // Clean up uploaded file
+        fs.unlinkSync(req.file.path);
+
+        // Attach processed count to request (for API tracking)
+        req.processedCount = processedCount;
+
+        return res.status(errors.length > 0 ? 400 : 200).json({
+            message: errors.length > 0 ? "Batch geocoding completed with errors." : "Batch geocoding completed successfully.",
+            results,
+            processedCount,
+            errors,
+            download: `${backendUrl}/${outputPath}`,
+        });
+    } catch (error) {
+        console.error("Error processing file:", error);
+        return res.status(500).json({ error: "Server error processing the file." });
+    }
+});
+
 /**
  * Geocode an address to get the coordinates. Endpoint allows batch process via json
  */
-router.post('/batch-geocode-json', checkProOrPremium, async (req, res) => {
+router.post('/batch-geocode-json', checkProOrPremium, trackApiUsage, async (req, res) => {
     const { addresses } = req.body; // Expecting an array of address strings
 
     if (!Array.isArray(addresses) || addresses.length === 0) {

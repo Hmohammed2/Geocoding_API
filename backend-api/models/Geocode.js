@@ -1,12 +1,10 @@
 const mongoose = require('mongoose');
 
 const geocodeSchema = new mongoose.Schema({
-    addressHash: { type: String, required: true, unique: true },
+    addressHash: { type: String, required: true, unique: true, index: true},
     address: {
         type: String,
         required: true,
-        unique: true, // Ensure each address is stored only once
-        index: true
     },
     latitude: {
         type: Number,

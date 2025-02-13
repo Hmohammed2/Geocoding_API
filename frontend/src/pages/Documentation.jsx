@@ -5,10 +5,10 @@ const Documentation = () => {
   const endpoints = [
     {
       method: "POST",
-      endpoint: "/geocode",
+      endpoint: "/api/v1/geocode",
       description: "Get geolocation data for a specific address.",
       request: `
-POST /geocode HTTP/1.1
+POST /api/v1/geocode HTTP/1.1
 Host: simplegeoapi.com
 Content-Type: application/json
 Headers: x-api-key <Your API Key>
@@ -31,10 +31,10 @@ Content-Type: application/json
     },
     {
       method: "POST",
-      endpoint: "/reverse-geocode",
+      endpoint: "/api/v1/reverse-geocode",
       description: "Get the address for specific latitude and longitude coordinates.",
       request: `
-  POST /reverse-geocode HTTP/1.1
+  POST /api/v1/reverse-geocode HTTP/1.1
   Host: simplegeoapi.com
   Content-Type: application/json
   Headers: x-api-key <Your API Key>
@@ -56,11 +56,11 @@ Content-Type: application/json
     },
     {
       method: "POST",
-      endpoint: "/batch-geocode-json",
+      endpoint: "/api/v1/batch-geocode-json",
       description: "Get geolocation data for multiple addresses.",
       proOnly: true, // Mark this endpoint as Pro
       request: `
-    POST /batch-geocode-json HTTP/1.1
+    POST /api/v1/batch-geocode-json HTTP/1.1
     Host: simplegeoapi.com
     Headers: x-api-key <Your API Key>
     {"addresses": "1600 Amphitheatre Parkway, Mountain View, CA", "1 Infinite Loop, Cupertino, CA"}

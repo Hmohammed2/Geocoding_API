@@ -1,5 +1,6 @@
 const dotenv = require('dotenv')
 const express = require('express')
+const path = require('path')
 const cors = require('cors')
 
 // Load the appropriate .env file
@@ -7,6 +8,7 @@ const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".en
 dotenv.config({ path: envFile });
 // Import and initialize the MongoDB connection
 require("./db")
+
 console.log(envFile)
 
 const PORT = process.env.PORT || 3000;
@@ -20,6 +22,8 @@ const corsOptions = {
   };
 
 app.use(cors(corsOptions));
+// Serve static files from the 'uploads' directory
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.options('*', cors(corsOptions)); // Handle preflight requests
 
 const geocodeRoutes = require('./routes/geocode')
