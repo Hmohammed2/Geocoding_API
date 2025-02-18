@@ -12,6 +12,8 @@ import LoginConfirmation from "./pages/LoginConfirmation"
 import PaymentConfirmation from "./pages/PaymentConfirmation"
 import RegisterConfirmation from "./pages/RegisterConfirmation"
 import TermsAndServices from "./pages/TermsAndServices"
+import ForgotPasswordPage from "./pages/ForgotPasswordPage"
+import ChangePasswordPage from "./pages/ChangePasswordPage"
 
 function App() {
 
@@ -26,6 +28,8 @@ function App() {
           <Route path="/register" element={<Register />} />{" "}
           <Route path="/login" element={<LoginPage />} />{" "}
           <Route path="/login-confirm" element={<LoginConfirmation />} />{" "}
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />{" "}
+          <Route path="/change-password/:token" element={<ChangePasswordPage />} />{" "}
           <Route path="/payment-confirm" element={<PaymentConfirmation />} />{" "}
           <Route path="/register-confirm" element={<RegisterConfirmation />} />{" "}
           <Route path="/documentation" element={<Documentation />} />{" "}

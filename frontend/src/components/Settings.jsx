@@ -12,151 +12,155 @@ import { useAlert } from "./contexts/AlertContext";
  * @returns {JSX.Element} The rendered Settings component.
  */
 const Settings = () => {
-    const { user, loading, logout } = useAuth()
-    const { alert, showAlert } = useAlert()
-    const activeSubscription = user?.subscription?.find(sub => sub.status_type === "active");
+  const { user, loading, logout } = useAuth()
+  const { alert, showAlert } = useAlert()
+  const activeSubscription = user?.subscription?.find(sub => sub.status_type === "active");
 
-    const [formData, setFormData] = useState(
-        {
-            userName: user.userName,
-            email: user.email,
-            plan: activeSubscription ? activeSubscription.subscription_type : "free" // Default to 'Free Plan' if no subscription is available 
-        }); // Separate form state
-    const [showApiKey, setShowApiKey] = useState(false); // Toggle API key visibility
-    /**
-     * Handles input changes in the form.
-     * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
-     */
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
-    };
+  const [formData, setFormData] = useState(
+    {
+      userName: user.userName,
+      email: user.email,
+      plan: activeSubscription ? activeSubscription.subscription_type : "free" // Default to 'Free Plan' if no subscription is available 
+    }); // Separate form state
+  const [showApiKey, setShowApiKey] = useState(false); // Toggle API key visibility
+  /**
+   * Handles input changes in the form.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+   */
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-    /**
-     * Handles form submission to update user profile.
-     * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
-     */
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await axios.put(
-                `${import.meta.env.VITE_BACKEND_URL}/api/users/update`,
-                { userId: user.userId, userName: formData.userName, email: formData.email }
-            );
-            console.log("Profile updated!", response.data)
-            // Show success alert
-            showAlert('Profile has been successfully updated!', 'success');
+  /**
+   * Handles form submission to update user profile.
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
+   */
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/api/users/update`,
+        { userId: user.userId, userName: formData.userName, email: formData.email }
+      );
+      console.log("Profile updated!", response.data)
+      // Show success alert
+      showAlert('Profile has been successfully updated!', 'success');
 
-        } catch (error) {
-            console.error("Error creating checkout session:", error);
-            // Show error alert
-            showAlert(error.message, 'error');
-        }
-        console.log("Updated Profile:", formData);
-    };
-    /**
-     * Handles subscription upgrade requests.
-     * @param {string} newPlan - The new subscription plan.
-     */
-    const handleUpgrade = async (newPlan) => {
-        if (formData.plan === "pro" && newPlan === "premium") {
-            const confirmUpgrade = window.confirm("You are currently on the Pro plan. Are you sure you want to upgrade to Premium?");
-            if (!confirmUpgrade) return;
-        }
-
-        console.log("Upgrading to:", newPlan);
-
-        try {
-            const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/api/payment/create-checkout-session/`,
-                { userId: user.userId, subscriptionType: newPlan }
-            );
-
-            console.log("Response data:", response.data);
-
-            if (response.data.message === "Subscription upgraded successfully to Premium!") {
-                showAlert("Your subscription has been upgraded to Premium!", "success");
-                setFormData({ ...formData, plan: "premium" }); // Update plan state
-            }
-
-            if (response.data.url) {
-                window.location.href = response.data.url; // Redirect to Stripe checkout
-            } else {
-                console.log("No URL returned from server");
-                showAlert('Failed to get checkout session URL', 'error');
-            }
-        } catch (error) {
-            console.error("Error creating checkout session:", error);
-            showAlert(error.response?.data?.message || 'Something went wrong', 'error');
-        }
-    };
-    /**
-     * Handles redirection to manage the user's subscription.
-     */
-    const handleManageSubscription = async () => {
-        const activeSubscription = user?.subscription?.find(sub => sub.status_type !== "canceled");
-
-        if (!activeSubscription || !activeSubscription.customer_id) {
-            showAlert("No active subscription to manage.", "error");
-            return;
-        }
-
-        try {
-            const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/api/payment/customers/${user.subscription[0].customer_id}`,
-                { userId: user.userId }
-            );
-
-            if (response.data.url) {
-                // Redirect the browser to the billing portal
-                window.location.href = response.data.url;
-            } else {
-                console.error("Failed to retrieve billing portal URL");
-            }
-        } catch (error) {
-            console.error("Error creating checkout session:", error);
-        }
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      // Show error alert
+      showAlert(error.message, 'error');
     }
-    /**
-     * Handles account deletion confirmation and request.
-     */
-    const handleDeleteAccount = async () => {
-        const confirmDelete = window.confirm("Are you sure you want to delete your account? This action is irreversible.");
-        if (!confirmDelete) return;
-
-        try {
-            const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/users/delete`, {
-                data: { userId: user.userId },
-            });
-
-            if (response.status === 200) {
-                showAlert("Your account has been deleted successfully.", "success");
-                logout(); // Log out the user after deletion
-            }
-        } catch (error) {
-            console.error("Error deleting account:", error);
-            showAlert(error.response?.data?.message || "Failed to delete account", "error");
-        }
-    };
-
-    // Fetch decrypted API key when button is clicked
-    const handleShowApiKey = () => {
-        setShowApiKey(prevState => !prevState); // Toggle the current state
-    };
-
-    if (loading) {
-        return <div className="text-center mt-8">Loading...</div>;
+    console.log("Updated Profile:", formData);
+  };
+  /**
+   * Handles subscription upgrade requests.
+   * @param {string} newPlan - The new subscription plan.
+   */
+  const handleUpgrade = async (newPlan) => {
+    if (formData.plan === "pro" && newPlan === "premium") {
+      const confirmUpgrade = window.confirm("You are currently on the Pro plan. Are you sure you want to upgrade to Premium?");
+      if (!confirmUpgrade) return;
     }
 
-    // Fallback in case user is null (e.g., failed auth)
-    if (!user) {
-        return <div className="min-h-screen flex items-center justify-center">Error loading user data</div>;
+    console.log("Upgrading to:", newPlan);
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/payment/create-checkout-session/`,
+        { userId: user.userId, subscriptionType: newPlan }
+      );
+
+      console.log("Response data:", response.data);
+
+      if (response.data.message === "Subscription upgraded successfully to Premium!") {
+        showAlert("Your subscription has been upgraded to Premium!", "success");
+        setFormData({ ...formData, plan: "premium" }); // Update plan state
+      }
+
+      if (response.data.url) {
+        window.location.href = response.data.url; // Redirect to Stripe checkout
+      } else {
+        console.log("No URL returned from server");
+        showAlert('Failed to get checkout session URL', 'error');
+      }
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      showAlert(error.response?.data?.message || 'Something went wrong', 'error');
+    }
+  };
+  /**
+   * Handles redirection to manage the user's subscription.
+   */
+  const handleManageSubscription = async () => {
+    const activeSubscription = user?.subscription?.find(sub => sub.status_type !== "canceled");
+
+    if (!activeSubscription || !activeSubscription.customer_id) {
+      showAlert("No active subscription to manage.", "error");
+      return;
     }
 
-    return (
-<div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto mt-10">
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/payment/customers/${user.subscription[0].customer_id}`,
+        { userId: user.userId }
+      );
+
+      if (response.data.url) {
+        // Redirect the browser to the billing portal
+        window.location.href = response.data.url;
+      } else {
+        showAlert("Failed to retrieve billing portal URL", "error")
+        console.error("Failed to retrieve billing portal URL");
+      }
+    } catch (error) {
+      showAlert("Error creating checkout session:", "error")
+      console.error("Error creating checkout session:", error);
+    }
+  }
+  /**
+   * Handles account deletion confirmation and request.
+   */
+  const handleDeleteAccount = async () => {
+    const confirmDelete = window.confirm("Are you sure you want to delete your account? This action is irreversible.");
+    if (!confirmDelete) return;
+
+    try {
+      const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/users/delete`, {
+        data: { userId: user.userId },
+      });
+
+      if (response.status === 200) {
+        showAlert("Your account has been deleted successfully.", "success");
+        logout(); // Log out the user after deletion
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      showAlert(error.response?.data?.message || "Failed to delete account", "error");
+    }
+  };
+
+  // Fetch decrypted API key when button is clicked
+  const handleShowApiKey = () => {
+    setShowApiKey(prevState => !prevState); // Toggle the current state
+  };
+
+  if (loading) {
+    return <div className="text-center mt-8">Loading...</div>;
+  }
+
+  // Fallback in case user is null (e.g., failed auth)
+  if (!user) {
+    return <div className="min-h-screen flex items-center justify-center">Error loading user data</div>;
+  }
+
+  return (
+    <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto mt-10">
+      {/* Render alert component */}
+      {alert && <Alert />}
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Settings</h2>
       {/* Profile Update Form */}
       <form onSubmit={handleSubmit} className="grid gap-6">
@@ -228,7 +232,7 @@ const Settings = () => {
         <button onClick={handleDeleteAccount} className="w-full bg-red-600 text-white py-3 rounded-md hover:bg-red-700 transition">Delete My Account</button>
       </div>
     </div>
-    );
+  );
 };
 
 export default Settings;

@@ -8,7 +8,9 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true, index: true },
     apiKey: { type: String, unique: true, index: true}, // Add API key field
     location: { type: String },
-    password: { type: String, required: true }
+    password: { type: String, required: true },
+    resetToken: { type: String },
+    resetTokenExpiration: { type: Date },
 })
 
 // Virtual field for subscription

@@ -105,8 +105,60 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+   /**
+   * Sends a password reset email by calling the backend endpoint.
+   * The backend endpoint should handle email generation and sending.
+   *
+   * @param {string} email - The email address of the user who wants to reset their password.
+   * @returns {Promise<Object>} - Returns response data if successful.
+   * @throws {Error} - Throws an error if the process fails.
+   */
+   const resetPassword = async (email) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/reset-password`,
+        { email }
+      );
+      if (response.status === 200) {
+        console.log("Reset password email sent");
+        return response.data;
+      } else {
+        throw new Error("Reset password failed!");
+      }
+    } catch (error) {
+      console.error("Reset password error:", error);
+      throw new Error("Reset password process failed!");
+    }
+  };
+
+  /**
+   * Changes the user's password.
+   *
+   * @param {string} oldPassword - The user's current password.
+   * @param {string} newPassword - The new password the user wants to set.
+   * @returns {Promise<Object>} - The response data from the backend.
+   * @throws {Error} - Throws an error if the password change process fails.
+   */
+  const changePassword = async (token, newPassword) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/change-password/${token}`,
+        { newPassword }
+      );
+      if (response.status === 200) {
+        console.log("Password changed successfully");
+        return response.data;
+      } else {
+        throw new Error("Change password failed!");
+      }
+    } catch (error) {
+      console.error("Change password error:", error);
+      throw new Error("Change password process failed!");
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, resetPassword, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

@@ -5,9 +5,11 @@ const User = require("../models/User");
 const Subscription = require("../models/Subscription");
 const { body, validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto")
 const cookieParser = require('cookie-parser');
 const generateApiKey = require('../utils/apiKey')
 const sendEmail = require('../utils/sendEmail')
+const requireAuth = require("../middleware/requireAuth")
 
 const router = express();
 router.use(cookieParser()); // This should be before your routes that need cookies
@@ -136,7 +138,7 @@ router.post("/register", async (req, res) => {
         </body>
         </html>`;
 
-        await sendEmail(`${email}`,"Your API Key - Keep it Safe", textContent ,htmlContent)
+        await sendEmail(`${email}`, "Your API Key - Keep it Safe", textContent, htmlContent)
 
         // Hash the ApiKey
         const hashedApiKey = await bcrypt.hash(apiKey, 10);
@@ -231,7 +233,9 @@ router.post("/logout", (req, res) => {
 
     res.status(200).json({ message: "Logged out successfully" });
 });
-
+/**
+ * Endpoint to handle verifying tokens.
+ */
 router.get("/verify-token", async (req, res) => {
     const token = req.cookies.token; // Get the token directly from cookies
 
@@ -253,4 +257,174 @@ router.get("/verify-token", async (req, res) => {
     }
 });
 
+/**
+ * Endpoint to handle password reset requests.
+ * Generates a reset token, saves it with an expiration on the user model,
+ * and sends an email with the reset link.
+ */
+router.post("/reset-password", async (req, res) => {
+    const { email } = req.body
+
+    if (!email) {
+        return res.status(400).json({ message: "Invalid email address" })
+    }
+
+    try {
+        // Find the user by email
+        const user = await User.findOne({ email });
+        if (!user) {
+            // To prevent email enumeration, always send the same response
+            return res
+                .status(200)
+                .json({ message: "If an account with that email exists, a reset email has been sent." });
+        }
+        // Generate a secure random token and set an expiration (e.g., 1 hour from now)
+        const token = crypto.randomBytes(32).toString("hex");
+        const tokenExpiration = Date.now() + 3600000; // 1 hour in milliseconds
+
+        // Save the token and its expiration on the user document.
+        // Make sure your User schema has fields for resetToken and resetTokenExpiration.
+        user.resetToken = token;
+        user.resetTokenExpiration = tokenExpiration;
+        await user.save();
+
+        // Construct the reset password link (update the URL to match your frontend route)
+        const resetLink = `${process.env.FRONT_END}/change-password/${token}`;
+
+        // Define the email content
+        const subject = "Reset Your Password";
+        const textContent = `You requested a password reset. Please click the link to reset your password: ${resetLink}`;
+        const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Reset Your Password</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      color: #333333;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: 30px auto;
+      background-color: #ffffff;
+      border: 1px solid #dddddd;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #dddddd;
+    }
+    .header h2 {
+      margin: 0;
+      color: #007BFF;
+    }
+    .content {
+      margin: 20px 0;
+      line-height: 1.6;
+      font-size: 16px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #007BFF;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 12px 25px;
+      border-radius: 5px;
+      font-size: 16px;
+      margin: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #777777;
+      border-top: 1px solid #dddddd;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Reset Your Password</h2>
+    </div>
+    <div class="content">
+      <p>Hi,</p>
+      <p>You recently requested to reset your password. Click the button below to proceed:</p>
+      <p style="text-align: center;">
+        <a href="${resetLink}" class="button">Reset Password</a>
+      </p>
+      <p>If you did not request a password reset, please ignore this email or contact our support team.</p>
+      <p>Thank you,<br>The SimpleGeoAPI Team</p>
+    </div>
+    <div class="footer">
+      <p>&copy; ${new Date().getFullYear()} SimpleGeoApi. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+        // Send the reset email
+        await sendEmail(email, subject, textContent, htmlContent);
+
+        // Always respond with a success message to prevent email enumeration
+        res.status(200).json({ message: "If an account with that email exists, a reset email has been sent." });
+    } catch (error) {
+        console.error("Reset password error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+
+
+})
+/**
+ * POST /api/auth/change-password/:token
+ * Endpoint to change the password using a reset token.
+ *
+ * Request body should include:
+ * - newPassword: the new password the user wants to set
+ */
+router.post("/change-password/:token", async (req, res) => {
+    const { token } = req.params;
+    const { newPassword } = req.body;
+  
+    // Validate request body
+    if (!newPassword) {
+      return res.status(400).json({ message: "New password is required." });
+    }
+  
+    try {
+      // Find the user by matching the reset token and ensuring it hasn't expired
+      const user = await User.findOne({
+        resetToken: token,
+        resetTokenExpiration: { $gt: Date.now() },
+      });
+  
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired token." });
+      }
+  
+      // Hash the new password before saving
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+  
+      // Update the user's password and clear the reset token fields
+      user.password = hashedPassword;
+      user.resetToken = undefined;
+      user.resetTokenExpiration = undefined;
+      await user.save();
+  
+      res.status(200).json({ message: "Password changed successfully." });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  });
 module.exports = router;

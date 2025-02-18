@@ -18,6 +18,7 @@ const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".en
 require('dotenv').config({ path: envFile });  // Make sure this is at the very top
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY
 const backendUrl = process.env.BACK_END
 const router = express.Router()
 
@@ -502,6 +503,63 @@ router.post('/batch-geocode-json', checkProOrPremium, trackApiUsage, async (req,
         });
     } catch (error) {
         return res.status(500).json({ error: 'Server error. Please try again later.' });
+    }
+});
+
+/**
+ * Get Points of Interest (POI) near a given location.
+ * This endpoint accepts the following JSON body parameters:
+ *   - lat: Latitude (required)
+ *   - lng: Longitude (required)
+ *   - radius: Search radius in meters (optional, default: 500)
+ *   - type: Place type/category (optional, default: "restaurant")
+ */
+router.post('/poi', checkProOrPremium, trackApiUsage, async (req, res) => {
+    const { lat, lng, radius, type } = req.body;
+
+    // Validate required fields
+    if (!lat || !lng) {
+        return res.status(400).json({ error: "Latitude and longitude are required." });
+    }
+
+    // Use default values if not provided
+    const poiRadius = radius || 500; // default radius of 500 meters
+    const poiType = type || "restaurant"; // default type
+
+    // Check that the API key is available
+    if (!GOOGLE_MAPS_API_KEY) {
+        return res.status(500).json({ error: "Google API key not configured." });
+    }
+
+    const url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
+
+    try {
+        // Call the Google Places API Nearby Search endpoint
+        const response = await axios.get(url, {
+            params: {
+                location: `${lat},${lng}`,
+                radius: poiRadius,
+                type: poiType,
+                key: GOOGLE_MAPS_API_KEY
+            }
+        });
+
+        // Check the API response status
+        if (response.data.status !== "OK") {
+            return res.status(400).json({ 
+                error: `POI search failed: ${response.data.status}`, 
+                details: response.data.error_message 
+            });
+        }
+
+        // Return the list of POIs to the client
+        return res.status(200).json({
+            message: "POI search completed.",
+            results: response.data.results,
+        });
+    } catch (error) {
+        console.error("Error fetching POIs:", error);
+        return res.status(500).json({ error: "Server error during POI search." });
     }
 });
 

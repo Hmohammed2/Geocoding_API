@@ -10,9 +10,11 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import UsageCard from "./UsageCard";
 import { useAuth } from "./contexts/AuthContext";
 import axios from "axios";
+import Alert from "./Alert";
+import { useAlert } from "./contexts/AlertContext";
+
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -21,6 +23,7 @@ const Dashboard = () => {
   const { user, loading } = useAuth();
   const [usageData, setUsageData] = useState(null);
   const [chartData, setChartData] = useState(null);
+  const { alert, showAlert } = useAlert()
   const activeSubscription = user?.subscription?.find(sub => sub.status_type === "active");
 
 
@@ -55,7 +58,10 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    if (loading) return; // wait until loading is complete
+    
     if (!user || !user.apiKey) {
+      showAlert("User or API key is missing.", 'error')
       console.error("User or API key is missing.");
       return;
     }
@@ -75,6 +81,7 @@ const Dashboard = () => {
         const data = response.data;
 
         if (!data || data.length === 0) {
+          showAlert("No usage data available.", 'error')
           console.error("No usage data available.");
         }
 
@@ -165,6 +172,7 @@ const Dashboard = () => {
         }));
 
       } catch (error) {
+        showAlert("Error fetching usage data:", 'error')
         console.error("Error fetching usage data:", error);
       }
     };
@@ -186,6 +194,8 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen">
+      {/* Render alert component */}
+      {alert && <Alert />}
       <main className="max-w-6xl mx-auto px-6 py-10">
         {/* Profile Card */}
         <section className="bg-white p-6 rounded-lg shadow-md mb-8">
