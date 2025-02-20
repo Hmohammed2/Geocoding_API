@@ -7,7 +7,7 @@ import FilePreviewToggle from "./FilePreviewToggle";
 import { useAuth } from "../components/contexts/AuthContext";
 import MapComponent from "../components/MapComponent";
 
-const DashboardLayout = () => {
+const UserPanel = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { user } = useAuth();
   const activeSubscription = user?.subscription?.find(sub => sub.status_type === "active");
@@ -136,7 +136,7 @@ const DashboardLayout = () => {
             </div>
           </header>
 
-          <main className="max-w-7xl mx-auto px-6 py-8">
+          <main className="max-w-7xl mx-auto px-2 py-8">
             {activeTab === "dashboard" && <Dashboard />}
             {activeTab === "settings" && <Settings />}
             {/* Conditionally render Batch Geocode content */}
@@ -149,4 +149,4 @@ const DashboardLayout = () => {
   );
 };
 
-export default DashboardLayout;
+export default UserPanel;

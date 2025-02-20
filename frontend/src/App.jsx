@@ -7,13 +7,13 @@ import Documentation from "./pages/Documentation"
 import ContactPage from "./pages/ContactPage"
 import Footer from "./components/Footer"
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import DashboardLayout from "./pages/DashboardLayout"
 import LoginConfirmation from "./pages/LoginConfirmation"
 import PaymentConfirmation from "./pages/PaymentConfirmation"
 import RegisterConfirmation from "./pages/RegisterConfirmation"
 import TermsAndServices from "./pages/TermsAndServices"
 import ForgotPasswordPage from "./pages/ForgotPasswordPage"
 import ChangePasswordPage from "./pages/ChangePasswordPage"
+import UserPanel from "./pages/UserPanel"
 
 function App() {
 
@@ -34,7 +34,7 @@ function App() {
           <Route path="/register-confirm" element={<RegisterConfirmation />} />{" "}
           <Route path="/documentation" element={<Documentation />} />{" "}
           <Route path="/contact" element={<ContactPage />} />{" "}
-          <Route path="/profile" element={<DashboardLayout />} />{" "}
+          <Route path="/profile" element={<UserPanel />} />{" "}
           <Route path="/terms" element={<TermsAndServices />} />{" "}
         </Routes>
         <Footer />

@@ -93,17 +93,50 @@ const MapComponent = () => {
               map: mapInstanceRef.current,
               title: poi.name,
             });
+
+            // Check if there are photos available
+            const photoHtml = (poi.photos && poi.photos.length > 0)
+              ? `<img src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${poi.photos[0].photo_reference}&key=${import.meta.env.VITE_GOOGLE_API_KEY}" style="width:100%; height:auto;" />`
+              : '';
+
             const infoWindow = new window.google.maps.InfoWindow({
               content: `
                   <div style="max-width:200px;">
+                    ${photoHtml}
                     <strong>${poi.name}</strong><br/>
                     ${poi.vicinity ? poi.vicinity : ''}<br/>
-                    ${poi.rating ? 'Rating: ' + poi.rating : ''}
+                    ${poi.rating ? 'Rating: ' + poi.rating : ''}<br/>
+                    <button 
+                      id="get-directions-btn" 
+                      data-lat="${lat}" 
+                      data-lng="${lng}"
+                      style="
+                        background-color: #4285F4;
+                        color: #fff;
+                        border: none;
+                        border-radius: 3px;
+                        padding: 8px 12px;
+                        cursor: pointer;
+                        font-size: 14px;
+                      ">
+                      Get Directions
+                    </button>
                   </div>
                 `,
             });
             marker.addListener('click', () => {
               infoWindow.open(mapInstanceRef.current, marker);
+            });
+
+            // When the info window's DOM is ready, attach the click event listener to the button.
+            window.google.maps.event.addListener(infoWindow, 'domready', () => {
+              const btn = document.getElementById('get-directions-btn');
+              if (btn) {
+                btn.addEventListener('click', () => {
+                  // Call your directions function here.
+                  getDirections(lat, lng);
+                });
+              }
             });
             poiMarkersRef.current.push(marker);
           }
@@ -115,6 +148,39 @@ const MapComponent = () => {
     }
   };
 
+  // Example getDirections function using Google Maps DirectionsService.
+  const getDirections = (destinationLat, destinationLng) => {
+    if (!navigator.geolocation) {
+      showAlert("Geolocation is not supported by this browser.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(position => {
+      const origin = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+      const destination = { lat: destinationLat, lng: destinationLng };
+
+      const directionsService = new window.google.maps.DirectionsService();
+      const directionsRenderer = new window.google.maps.DirectionsRenderer();
+      directionsRenderer.setMap(mapInstanceRef.current);
+
+      directionsService.route(
+        {
+          origin,
+          destination,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === window.google.maps.DirectionsStatus.OK) {
+            directionsRenderer.setDirections(result);
+          } else {
+            showAlert('Could not get directions: ' + status, 'error');
+          }
+        }
+      );
+    });
+  }
   /**
    * Updates the map's center, circle, and re-fetches POIs. If the user has selected the
    * address option, the function geocodes the address to obtain lat/lng coordinates.
@@ -319,6 +385,7 @@ const MapComponent = () => {
           </button>
         </div>
       </form>
+      <h2 className='mt-10'>Total Number of POI's found: {poiData.length}</h2>
       <div className="flex-1">
         <div ref={mapContainerRef} style={{ height: '500px', width: '100%' }} />
       </div>
