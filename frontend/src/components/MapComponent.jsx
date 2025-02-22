@@ -261,7 +261,7 @@ const MapComponent = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+    <div className="max-w-8xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">POI Analysis Map</h2>
       {alert && <Alert />}
       <form onSubmit={updateMap} className="space-y-6">

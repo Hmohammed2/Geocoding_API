@@ -25,7 +25,26 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState(null);
   const { alert, showAlert } = useAlert()
   const activeSubscription = user?.subscription?.find(sub => sub.status_type === "active");
+  const trialSubscription = user?.subscription?.find(sub => sub.status_type === "trialing");
 
+  // Determine the effective subscription, preferring trial if available
+  const effectiveSubscription = trialSubscription || activeSubscription;
+
+  // Determine the plan name, showing trial status explicitly if applicable
+  const planName = effectiveSubscription
+    ? effectiveSubscription.status_type === "trialing"
+      ? `${effectiveSubscription.subscription_type.charAt(0).toUpperCase() + effectiveSubscription.subscription_type.slice(1)} (Trial)`
+      : `${effectiveSubscription.subscription_type.charAt(0).toUpperCase() + effectiveSubscription.subscription_type.slice(1)} Plan`
+    : "No Active Plan";
+
+  // Get the renewal date, if available
+  const renewDate = effectiveSubscription?.end_date
+    ? new Date(effectiveSubscription.end_date).toLocaleDateString("en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    })
+    : "N/A";
 
   const chartOptions = {
     responsive: true,
@@ -59,7 +78,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (loading) return; // wait until loading is complete
-    
+
     if (!user || !user.apiKey) {
       showAlert("User or API key is missing.", 'error')
       console.error("User or API key is missing.");
@@ -133,15 +152,16 @@ const Dashboard = () => {
         // Calculate total requests for the month
         const totalRequestsThisMonth = data.reduce((acc, item) => acc + item.totalRequests, 0);
 
-        // Calculate the user's subscription type (remaining requests)
-        const subscription = activeSubscription
-        const planRequestsLimit = subscription?.subscription_type === "free"
-          ? 1000
-          : subscription?.subscription_type === "pro"
-            ? 50000
-            : subscription?.subscription_type === "premium"
-              ? 2500000
-              : 0;
+        // Determine the plan's request limit based on the effective subscription type/status
+        const planRequestsLimit = effectiveSubscription
+          ? (effectiveSubscription.status_type === "trialing" || effectiveSubscription.subscription_type === "free")
+            ? 1000
+            : effectiveSubscription.subscription_type === "pro"
+              ? 50000
+              : effectiveSubscription.subscription_type === "premium"
+                ? 2500000
+                : 0
+          : 0;
 
         const requestsRemaining = planRequestsLimit - totalRequestsThisMonth;
 
@@ -171,7 +191,6 @@ const Dashboard = () => {
         }));
 
       } catch (error) {
-        showAlert("Error fetching usage data:", 'error')
         console.error("Error fetching usage data:", error);
       }
     };
@@ -205,8 +224,8 @@ const Dashboard = () => {
               <p className="text-gray-700"><span className="font-semibold">Email:</span> {user.email || "N/A"}</p>
             </div>
             <div>
-              <p className="text-gray-700"><span className="font-semibold">Plan:</span> {activeSubscription?.subscription_type === "free" ? "Free Plan" : `${activeSubscription?.subscription_type || "N/A"} Plan`}</p>
-              <p className="text-gray-700"><span className="font-semibold">Renew Date:</span> {activeSubscription?.end_date ? new Date(activeSubscription.end_date).toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "2-digit" }) : "N/A"}</p>
+              <p className="text-gray-700"><span className="font-semibold">Plan:</span> {planName}</p>
+              <p className="text-gray-700"><span className="font-semibold">Renew Date:</span> {renewDate}</p>
             </div>
           </div>
         </section>

@@ -9,7 +9,6 @@ const crypto = require("crypto")
 const cookieParser = require('cookie-parser');
 const generateApiKey = require('../utils/apiKey')
 const sendEmail = require('../utils/sendEmail')
-const requireAuth = require("../middleware/requireAuth")
 
 const router = express();
 router.use(cookieParser()); // This should be before your routes that need cookies
@@ -427,4 +426,5 @@ router.post("/change-password/:token", async (req, res) => {
       res.status(500).json({ message: "Internal server error." });
     }
   });
+
 module.exports = router;

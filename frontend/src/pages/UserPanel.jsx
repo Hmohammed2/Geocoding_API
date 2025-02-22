@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { FaTachometerAlt, FaCog, FaUpload, FaMapMarkerAlt, FaHome } from "react-icons/fa";
 import Dashboard from "../components/Dashboard";
 import Settings from "../components/Settings";
-import { Helmet } from "react-helmet-async";
 import FilePreviewToggle from "./FilePreviewToggle";
+import { Helmet } from "react-helmet-async";
 import { useAuth } from "../components/contexts/AuthContext";
 import MapComponent from "../components/MapComponent";
 import PropertySearch from "../components/PropertySearch";
@@ -12,35 +12,65 @@ import ManageSubscriptions from "../components/ManageSubscriptions";
 const UserPanel = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { user } = useAuth();
-  const activeSubscription = user?.subscription?.find(sub => sub.status_type === "active");
+  // Find the user's active or trialing subscription, preferring trial first
+  const subscriptions = user?.subscription || [];
+  const trialSubscription = subscriptions.find(sub => sub.status_type === "trialing");
+  const activeSubscription = subscriptions.find(sub => sub.status_type === "active");
+
+  // Determine the effective subscription (prioritizing trial)
+  const effectiveSubscription = trialSubscription || activeSubscription;
 
   // Check if the user has a premium subscription
-  const isPremium = activeSubscription?.subscription_type === "premium";
+  const isPremium = effectiveSubscription?.subscription_type === "premium";
+
+  // Helper function to get page title and description
+  const getMetaInfo = (tab) => {
+    switch (tab) {
+      case "dashboard":
+        return {
+          title: "Dashboard - User Panel",
+          description: "Manage and view your user dashboard. Track your activity, view insights, and manage your settings."
+        };
+      case "settings":
+        return {
+          title: "Settings - User Panel",
+          description: "Adjust your preferences and settings. Customize your account and application settings."
+        };
+      case "batch-geocode":
+        return {
+          title: "Batch Geocode - User Panel",
+          description: "Upload an Excel or flat file for batch geocoding."
+        };
+      case "poi-analysis":
+        return {
+          title: "POI Analysis - User Panel",
+          description: "Analyze points of interest on an interactive map."
+        };
+      case "property-finder":
+        return {
+          title: "Property Finder - User Panel",
+          description: "Search for properties based on your preferences and location."
+        };
+      case "manage-subscription":
+        return {
+          title: "Manage Subscription - User Panel",
+          description: "View and manage your subscription details."
+        };
+      default:
+        return {
+          title: "User Panel",
+          description: "Explore and manage your user panel."
+        };
+    }
+  };
+
+  const metaInfo = getMetaInfo(activeTab);
 
   return (
     <>
       <Helmet>
-        <title>
-          {activeTab === "dashboard"
-            ? "Dashboard - User Panel"
-            : activeTab === "settings"
-              ? "Settings - User Panel"
-              : activeTab === "batch-geocode"
-                ? "Batch Geocode - User Panel"
-                : "POI Analysis - User Panel"}
-        </title>
-        <meta
-          name="description"
-          content={
-            activeTab === "dashboard"
-              ? "Manage and view your user dashboard. Track your activity, view insights, and manage your settings."
-              : activeTab === "settings"
-                ? "Adjust your preferences and settings. Customize your account and application settings."
-                : activeTab === "batch-geocode"
-                  ? "Upload an Excel or flat file for batch geocoding."
-                  : "Analyze points of interest on an interactive map."
-          }
-        />
+        <title>{metaInfo.title}</title>
+        <meta name="description" content={metaInfo.description} />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={`https://simplegeoapi.com/dashboard/${activeTab}`} />
       </Helmet>

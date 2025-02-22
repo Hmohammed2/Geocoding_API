@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const Feedback = require("../models/Feedback")
+const TrialRecord = require("../models/TrialRecord")
 const Geocode = require("../models/Geocode");
 const express = require("express");
 const mongoose = require('mongoose')
@@ -115,17 +117,28 @@ router.get('/geocode-data', checkAdmin, async (req, res) => {
 router.delete('/delete', async (req, res) => {
     try {
         const { userId } = req.body;
-
         if (!userId) {
             return res.status(400).json({ message: 'No user ID provided' });
         }
 
-        const deletedUser = await User.findByIdAndDelete(userId);
-
-        if (!deletedUser) {
+        // Retrieve the user to check trial status
+        const user = await User.findById(userId);
+        if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // If the user has used the free trial, persist the hashed email
+        if (user.trialUsed) {
+            const emailHash = crypto
+                .createHash('sha256')
+                .update(user.email.toLowerCase())
+                .digest('hex');
+
+            await TrialRecord.create({ emailHash, trialUsed: true, deletedAt: new Date() });
+        }
+
+        // Delete the user account
+        await User.findByIdAndDelete(userId);
         res.status(200).json({ message: 'User deleted successfully' });
     } catch (error) {
         console.error('Error deleting user:', error);
@@ -186,5 +199,18 @@ router.post("/send-email", async (req, res) => {
         res.status(500).json({ error: "Failed to send email" });
     }
 });
+
+router.post("/feedback", async (req, res) => {
+    try {
+      const feedback = new Feedback({
+        feedback: req.body.feedback,
+      });
+  
+      await feedback.save();
+      res.status(201).json({ message: "Feedback submitted successfully!" });
+    } catch (error) {
+      res.status(500).json({ message: "Error saving feedback", error });
+    }
+  });
 
 module.exports = router

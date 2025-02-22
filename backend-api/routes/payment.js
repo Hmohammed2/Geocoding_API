@@ -19,6 +19,11 @@ router.post("/create-checkout-session", express.json(), async (req, res) => {
   }
 
   try {
+    // Fetch the user record to check trial usage
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
     // Fetch the user's current active subscription
     const existingSubscription = await Subscription.findOne({
       user_id: userId,
@@ -55,9 +60,8 @@ router.post("/create-checkout-session", express.json(), async (req, res) => {
     // Prepare subscription data (trial only applies for premium)
     let subscriptionData = {};
     if (subscriptionType === "premium") {
-      // Check if user has any past subscriptions at all
-      const pastSubscriptions = await Subscription.find({ user_id: userId });
-      if (pastSubscriptions.length === 1 && pastSubscriptions[0].subscription_type === "free") {
+      // Only offer a trial if the user hasn't already used it
+      if (!user.trialUsed) {
         subscriptionData.trial_period_days = 7;
       }
     }
@@ -215,17 +219,17 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
             // Create a new Premium subscription entry
             const newSubscription = new Subscription({
-                user_id: userId,
-                customer_id: eventData.customer,
-                subscription_type: subscriptionType,
-                start_date: new Date(),
-                status_type: "active",
-                stripeSubscriptionId: stripeSubscriptionId,
-                lastPayment: new Date(),
+              user_id: userId,
+              customer_id: eventData.customer,
+              subscription_type: subscriptionType,
+              start_date: new Date(),
+              status_type: "active",
+              stripeSubscriptionId: stripeSubscriptionId,
+              lastPayment: new Date(),
             });
 
             await newSubscription.save();
-            
+
             console.log("✅ Subscription upgraded from Pro to Premium.");
             return res.status(200).json({ message: "Subscription upgraded successfully." });
           }
@@ -238,13 +242,13 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
             // Create a new Premium subscription entry
             const newSubscription = new Subscription({
-                user_id: userId,
-                customer_id: eventData.customer,
-                subscription_type: subscriptionType,
-                start_date: new Date(),
-                status_type: "active",
-                stripeSubscriptionId: stripeSubscriptionId,
-                lastPayment: new Date(),
+              user_id: userId,
+              customer_id: eventData.customer,
+              subscription_type: subscriptionType,
+              start_date: new Date(),
+              status_type: "active",
+              stripeSubscriptionId: stripeSubscriptionId,
+              lastPayment: new Date(),
             });
 
             await newSubscription.save();
@@ -338,6 +342,13 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
         // Check if the subscription includes a trial
         const isTrialing = eventData.status === "trialing";
+
+        // If this is a premium subscription that included a trial, update the user's trial status
+        if (eventData.metadata.subscription_type === "premium" && eventData.trial_start) {
+          // Convert trial_start (a Unix timestamp) to a Date if needed
+          await User.findByIdAndUpdate(eventData.metadata.userId, { trialUsed: true, trialActivatedAt: new Date(eventData.trial_start * 1000) });
+          console.log("✅ Marked trial as used for user:", eventData.metadata.userId);
+        }
 
         const newSubscription = new Subscription({
           user_id: eventData.metadata.userId,

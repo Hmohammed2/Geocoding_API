@@ -8,7 +8,7 @@ const PropertySearch = () => {
   const [priceRange, setPriceRange] = useState([0, 3000000]); // Default range: 0 to 3 million
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg">
+    <div className="max-w-8xl mx-auto p-6 bg-white shadow-lg rounded-lg">
       <h2 className="text-3xl font-semibold text-center text-gray-800 mb-6">
         Search Property Prices
       </h2>

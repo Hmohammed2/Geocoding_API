@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import Subscription from "./pages/Subscription"
 import LandingPage from "./pages/LandingPage"
 import Register from "./pages/Register"
@@ -14,8 +15,30 @@ import TermsAndServices from "./pages/TermsAndServices"
 import ForgotPasswordPage from "./pages/ForgotPasswordPage"
 import ChangePasswordPage from "./pages/ChangePasswordPage"
 import UserPanel from "./pages/UserPanel"
+import FeedbackModal from "./components/FeedbackModal"
 
 function App() {
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    // Set a timer to open the modal after 30 seconds
+    const timer = setTimeout(() => {
+      setIsModalOpen(true);
+    }, 3000); // 30000ms = 30 seconds
+
+    // Cleanup timer if the component unmounts
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleSubmitFeedback = () => {
+    alert("Thank you for your feedback!");
+    setIsModalOpen(false);
+  };
 
   return (
     <BrowserRouter>
@@ -38,6 +61,13 @@ function App() {
           <Route path="/terms" element={<TermsAndServices />} />{" "}
         </Routes>
         <Footer />
+        {/* Render the feedback modal if open */}
+        {isModalOpen && (
+          <FeedbackModal 
+            onClose={handleCloseModal} 
+            onSubmit={handleSubmitFeedback} 
+          />
+        )}
       </>
     </BrowserRouter>
   )

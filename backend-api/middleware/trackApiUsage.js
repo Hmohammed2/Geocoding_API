@@ -26,8 +26,8 @@ const trackApiUsage = async (req, res, next) => {
     // Determine request count (default to 1 for normal requests)
     let requestCount = 1;
 
-    // Handle batch JSON geocoding (multiple addresses)
-    if (req.body.addresses && Array.isArray(req.body.addresses)) {
+    // Only check req.body if it exists (for POST/PUT requests)
+    if (req.body && Array.isArray(req.body.addresses)) {
       requestCount = req.body.addresses.length;
     }
 

@@ -9,7 +9,7 @@ const multer = require('multer');
 const csvParser = require('csv-parser');
 const { trackApiUsage, trackBatchUsage } = require('../middleware/trackApiUsage')
 const verifyApiKey = require("../middleware/verifyApiKey"); // Adjust the path as needed
-const enforceApiLimit = require('../middleware/enforceApiLimit');
+const { enforceMonthlyLimit, enforceDailyLimit } = require('../middleware/enforceApiLimit');
 const checkProOrPremium = require("../middleware/checkProOrPremium")
 const Papa = require('papaparse');
 
@@ -28,7 +28,10 @@ const upload = multer({ dest: 'uploads/' });
 // Middleware
 router.use(express.json())
 router.use(verifyApiKey)
-router.use(enforceApiLimit)
+
+// Apply both monthly and daily limits
+router.use(enforceMonthlyLimit);
+router.use(enforceDailyLimit);
 
 /**
  * Geocode an address to get its coordinates.
