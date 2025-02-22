@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { FaTachometerAlt, FaCog, FaUpload, FaMapMarkerAlt } from "react-icons/fa";
+import { FaTachometerAlt, FaCog, FaUpload, FaMapMarkerAlt, FaHome } from "react-icons/fa";
 import Dashboard from "../components/Dashboard";
 import Settings from "../components/Settings";
 import { Helmet } from "react-helmet-async";
 import FilePreviewToggle from "./FilePreviewToggle";
 import { useAuth } from "../components/contexts/AuthContext";
 import MapComponent from "../components/MapComponent";
+import PropertySearch from "../components/PropertySearch";
+import ManageSubscriptions from "../components/ManageSubscriptions";
 
 const UserPanel = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -19,13 +21,13 @@ const UserPanel = () => {
     <>
       <Helmet>
         <title>
-        {activeTab === "dashboard"
+          {activeTab === "dashboard"
             ? "Dashboard - User Panel"
             : activeTab === "settings"
-            ? "Settings - User Panel"
-            : activeTab === "batch-geocode"
-            ? "Batch Geocode - User Panel"
-            : "POI Analysis - User Panel"}
+              ? "Settings - User Panel"
+              : activeTab === "batch-geocode"
+                ? "Batch Geocode - User Panel"
+                : "POI Analysis - User Panel"}
         </title>
         <meta
           name="description"
@@ -33,10 +35,10 @@ const UserPanel = () => {
             activeTab === "dashboard"
               ? "Manage and view your user dashboard. Track your activity, view insights, and manage your settings."
               : activeTab === "settings"
-              ? "Adjust your preferences and settings. Customize your account and application settings."
-              : activeTab === "batch-geocode"
-              ? "Upload an Excel or flat file for batch geocoding."
-              : "Analyze points of interest on an interactive map."
+                ? "Adjust your preferences and settings. Customize your account and application settings."
+                : activeTab === "batch-geocode"
+                  ? "Upload an Excel or flat file for batch geocoding."
+                  : "Analyze points of interest on an interactive map."
           }
         />
         <meta name="robots" content="index, follow" />
@@ -64,6 +66,14 @@ const UserPanel = () => {
               <FaCog className="mr-3 text-lg" />
               <span className="text-lg">Settings</span>
             </button>
+            <button
+              className={`flex items-center w-full text-left p-3 rounded-lg transition-all duration-300 
+                ${activeTab === "manage-subscription" ? "bg-white text-blue-700 shadow-lg" : "hover:bg-blue-600/50"}`}
+              onClick={() => setActiveTab("manage-subscription")}
+            >
+              <FaCog className="mr-3 text-lg" />
+              <span className="text-lg">Manage Subscription</span>
+            </button>
 
             {/* Conditionally render Batch Geocode tab */}
             {isPremium && (
@@ -86,6 +96,17 @@ const UserPanel = () => {
                 >
                   <FaMapMarkerAlt className="mr-3 text-lg" />
                   <span className="text-lg">POI Analysis</span>
+                </button>
+                <button
+                  className={`flex items-center w-full text-left p-3 rounded-lg transition-all duration-300 
+                            ${activeTab === "property-finder"
+                      ? "bg-white text-blue-700 shadow-lg"
+                      : "hover:bg-blue-600/50"
+                    }`}
+                  onClick={() => setActiveTab("property-finder")}
+                >
+                  <FaHome className="mr-3 text-lg" />
+                  <span className="text-lg">Property Finder</span>
                 </button>
               </>
             )}
@@ -111,6 +132,12 @@ const UserPanel = () => {
                 >
                   <FaCog className="mr-2" /> Settings
                 </button>
+                <button
+                  className={`${activeTab === "manage-subscription" ? "text-blue-300" : "text-white"} flex items-center`}
+                  onClick={() => setActiveTab("manage-subscription")}
+                >
+                  <FaCog className="mr-2" /> Manage Subscription
+                </button>
 
                 {/* Conditionally render Batch Geocode tab on small screens */}
                 {isPremium && (
@@ -132,6 +159,17 @@ const UserPanel = () => {
                     <FaMapMarkerAlt className="mr-2" /> POI Analysis
                   </button>
                 )}
+                {isPremium && (
+                  <button
+                    className={`${activeTab === "property-finder"
+                      ? "text-blue-300"
+                      : "text-white"
+                      } flex items-center`}
+                    onClick={() => setActiveTab("property-finder")}
+                  >
+                    <FaHome className="mr-2" /> Property Finder
+                  </button>
+                )}
               </nav>
             </div>
           </header>
@@ -139,9 +177,11 @@ const UserPanel = () => {
           <main className="max-w-7xl mx-auto px-2 py-8">
             {activeTab === "dashboard" && <Dashboard />}
             {activeTab === "settings" && <Settings />}
+            {activeTab === "manage-subscription" && <ManageSubscriptions />}
             {/* Conditionally render Batch Geocode content */}
             {activeTab === "batch-geocode" && isPremium && <FilePreviewToggle />}
             {activeTab === "poi-analysis" && isPremium && <MapComponent />}
+            {activeTab === "property-finder" && isPremium && <PropertySearch />}
           </main>
         </div>
       </div>

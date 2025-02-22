@@ -48,8 +48,6 @@ router.post('/geocode', trackApiUsage, async (req, res) => {
     const formattedAddress = address.trim().toLowerCase(); // Normalize the address
     addressHash = crypto.createHash('sha256').update(formattedAddress).digest('hex');
 
-    console.log(formattedAddress, addressHash)
-
     try {
         // Step 2: Check if the address already exists in the database
         const cachedResult = await Geocode.findOne({ addressHash });

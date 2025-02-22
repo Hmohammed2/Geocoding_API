@@ -140,11 +140,12 @@ const LandingPage = () => {
                     <p className="text-center text-gray-600 mb-12">
                         Choose the plan that fits your needs.
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {[
                             { name: "Free", price: "£0", features: ["1,000 requests/month", "Standard response time", "Community support"] },
                             { name: "Pro", price: "£19.99", features: ["50,000 requests/month", "Faster response time", "Email support"] },
                             { name: "Premium", price: "£69.99", features: ["250,000 requests/month", "Priority support", "Advanced analytics"] },
+                            { name: "Enterprise", price: "Custom", features: ["Custom", "Priority 24/7 support", "Service Level Agreement (SLA) with uptime guarantee"] }
                         ].map((plan, index) => (
                             <div key={index} className="bg-white p-6 rounded-lg shadow-md text-center">
                                 <h3 className="text-xl font-bold">{plan.name}</h3>

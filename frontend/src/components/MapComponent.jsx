@@ -59,7 +59,6 @@ const MapComponent = () => {
     loadScript();
   }, []); // run once on mount
 
-  // Function to fetch POIs from the backend.
   const fetchPOIs = async (currentLat, currentLng, currentRadius, currentType) => {
     try {
       const response = await axios.post(
@@ -77,14 +76,9 @@ const MapComponent = () => {
         }
       );
       if (response.data && response.data.results) {
-        // Save POI results for later export
         setPoiData(response.data.results);
-
-        // Clear any existing markers
         poiMarkersRef.current.forEach(marker => marker.setMap(null));
         poiMarkersRef.current = [];
-
-        // Loop through each POI and add a marker to the map.
         response.data.results.forEach(poi => {
           if (poi.geometry && poi.geometry.location) {
             const { lat, lng } = poi.geometry.location;
@@ -94,46 +88,36 @@ const MapComponent = () => {
               title: poi.name,
             });
 
-            // Check if there are photos available
             const photoHtml = (poi.photos && poi.photos.length > 0)
               ? `<img src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${poi.photos[0].photo_reference}&key=${import.meta.env.VITE_GOOGLE_API_KEY}" style="width:100%; height:auto;" />`
               : '';
 
             const infoWindow = new window.google.maps.InfoWindow({
               content: `
-                  <div style="max-width:200px;">
-                    ${photoHtml}
-                    <strong>${poi.name}</strong><br/>
-                    ${poi.vicinity ? poi.vicinity : ''}<br/>
-                    ${poi.rating ? 'Rating: ' + poi.rating : ''}<br/>
-                    <button 
-                      id="get-directions-btn" 
-                      data-lat="${lat}" 
-                      data-lng="${lng}"
-                      style="
-                        background-color: #4285F4;
-                        color: #fff;
-                        border: none;
-                        border-radius: 3px;
-                        padding: 8px 12px;
-                        cursor: pointer;
-                        font-size: 14px;
-                      ">
-                      Get Directions
-                    </button>
-                  </div>
-                `,
+                <div style="max-width:200px;">
+                  ${photoHtml}
+                  <strong>${poi.name}</strong><br/>
+                  ${poi.vicinity ? poi.vicinity : ''}<br/>
+                  ${poi.rating ? 'Rating: ' + poi.rating : ''}<br/>
+                  <button 
+                    id="get-directions-btn" 
+                    data-lat="${lat}" 
+                    data-lng="${lng}"
+                    class="bg-blue-500 text-white py-2 px-4 rounded mt-2 hover:bg-blue-600 transition duration-300"
+                  >
+                    Get Directions
+                  </button>
+                </div>
+              `,
             });
             marker.addListener('click', () => {
               infoWindow.open(mapInstanceRef.current, marker);
             });
 
-            // When the info window's DOM is ready, attach the click event listener to the button.
             window.google.maps.event.addListener(infoWindow, 'domready', () => {
               const btn = document.getElementById('get-directions-btn');
               if (btn) {
                 btn.addEventListener('click', () => {
-                  // Call your directions function here.
                   getDirections(lat, lng);
                 });
               }
@@ -148,17 +132,13 @@ const MapComponent = () => {
     }
   };
 
-  // Example getDirections function using Google Maps DirectionsService.
   const getDirections = (destinationLat, destinationLng) => {
     if (!navigator.geolocation) {
       showAlert("Geolocation is not supported by this browser.");
       return;
     }
     navigator.geolocation.getCurrentPosition(position => {
-      const origin = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      };
+      const origin = { lat: position.coords.latitude, lng: position.coords.longitude };
       const destination = { lat: destinationLat, lng: destinationLng };
 
       const directionsService = new window.google.maps.DirectionsService();
@@ -180,23 +160,16 @@ const MapComponent = () => {
         }
       );
     });
-  }
-  /**
-   * Updates the map's center, circle, and re-fetches POIs. If the user has selected the
-   * address option, the function geocodes the address to obtain lat/lng coordinates.
-   *
-   * @param {Event} e - The form submit event.
-   */
+  };
+
   const updateMap = (e) => {
     e.preventDefault();
     const newRadius = parseFloat(radius);
     if (useAddress) {
-      // Validate that an address has been entered
       if (!address) {
         showAlert('Please enter an address.', 'error');
         return;
       }
-      // Geocode the address to get lat/lng coordinates
       const geocoder = new window.google.maps.Geocoder();
       geocoder.geocode({ address: address }, (results, status) => {
         if (status === 'OK' && results[0]) {
@@ -267,19 +240,15 @@ const MapComponent = () => {
     lat: poi.geometry?.location?.lat || '',
     lng: poi.geometry?.location?.lng || '',
     place_id: poi.place_id || '',
-    // If you want to include other nested fields, add them here
   });
 
-  // Function to export POI data as a CSV file.
   const exportCSV = () => {
     if (poiData.length === 0) {
       showAlert('No POI data available to export.', 'error');
       return;
     }
 
-    // Flatten the data first:
     const flattenedData = poiData.map(flattenPOI);
-    // Convert JSON data to CSV format.
     const csv = Papa.unparse(flattenedData);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -292,108 +261,122 @@ const MapComponent = () => {
   };
 
   return (
-    <>
-      <h2 className="text-2xl font-bold mb-4">POI Analysis Map</h2>
-      {/* Render alert component */}
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">POI Analysis Map</h2>
       {alert && <Alert />}
-      <form onSubmit={updateMap} className="mb-4 space-y-2">
-        {/* Toggle for input type */}
-        <div className="mb-2">
-          <label className="mr-4">
+      <form onSubmit={updateMap} className="space-y-6">
+        {/* Input Toggle for Lat/Long vs Address */}
+        <div className="flex items-center space-x-4">
+          <label className="text-gray-600">
             <input
               type="radio"
               value="latlong"
               checked={!useAddress}
               onChange={() => setUseAddress(false)}
-              className="mr-1"
+              className="mr-2"
             />
             Lat/Long
           </label>
-          <label className="mr-4">
+          <label className="text-gray-600">
             <input
               type="radio"
               value="address"
               checked={useAddress}
               onChange={() => setUseAddress(true)}
-              className="mr-1"
+              className="mr-2"
             />
             Address
           </label>
         </div>
-        {/* Render appropriate inputs based on selection */}
+
+        {/* Conditionally Render Inputs */}
         {useAddress ? (
-          <div className="mb-2">
-            <label className="mr-2">Address:</label>
+          <div>
+            <label className="block text-gray-600">Address:</label>
             <input
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Enter address"
-              className="border p-1 mr-4"
+              className="w-full border-2 border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         ) : (
-          <div className="mb-2">
-            <label className="mr-2">Latitude:</label>
-            <input
-              type="number"
-              value={lat}
-              onChange={(e) => setLat(e.target.value)}
-              step="0.0001"
-              className="border p-1 mr-4"
-            />
-            <label className="mr-2">Longitude:</label>
-            <input
-              type="number"
-              value={lng}
-              onChange={(e) => setLng(e.target.value)}
-              step="0.0001"
-              className="border p-1 mr-4"
-            />
+          <div className="flex space-x-4">
+            <div className="w-1/2">
+              <label className="block text-gray-600">Latitude:</label>
+              <input
+                type="number"
+                value={lat}
+                onChange={(e) => setLat(e.target.value)}
+                step="0.0001"
+                className="w-full border-2 border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="w-1/2">
+              <label className="block text-gray-600">Longitude:</label>
+              <input
+                type="number"
+                value={lng}
+                onChange={(e) => setLng(e.target.value)}
+                step="0.0001"
+                className="w-full border-2 border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
         )}
-        <div className="mb-2">
-          <label className="mr-2">Radius (meters):</label>
-          <input
-            type="number"
-            value={radius}
-            onChange={(e) => setRadius(e.target.value)}
-            className="border p-1 mr-4"
-          />
-          <label className="mr-2">Business Category:</label>
-          <input
-            type="text"
-            value={businessCategory}
-            onChange={(e) => setBusinessCategory(e.target.value)}
-            placeholder="e.g., restaurant"
-            className="border p-1 mr-4"
-          />
+
+        {/* Radius and Category Inputs */}
+        <div className="flex items-center space-x-4">
+          <div>
+            <label className="block text-gray-600">Radius (meters):</label>
+            <input
+              type="number"
+              value={radius}
+              onChange={(e) => setRadius(e.target.value)}
+              className="w-full border-2 border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-600">Business Category:</label>
+            <input
+              type="text"
+              value={businessCategory}
+              onChange={(e) => setBusinessCategory(e.target.value)}
+              placeholder="e.g., restaurant"
+              className="w-full border-2 border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
-        <div>
+
+        {/* Buttons */}
+        <div className="space-x-4">
           <button
             type="submit"
-            className="bg-blue-600 text-white p-2 rounded mr-4 shadow-md hover:bg-blue-700"
+            className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition duration-300"
           >
             Update Map & Fetch POIs
           </button>
           <button
             type="button"
             onClick={exportCSV}
-            className="bg-green-600 text-white p-2 rounded shadow-md hover:bg-green-700"
+            className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 transition duration-300"
           >
             Export CSV
           </button>
         </div>
       </form>
-      <h2 className='mt-10'>Total Number of POI's found: {poiData.length}</h2>
-      <div className="flex-1">
-        <div ref={mapContainerRef} style={{ height: '500px', width: '100%' }} />
+
+      <h2 className="mt-6 text-lg text-gray-700">Total POIs Found: {poiData.length}</h2>
+
+      <div className="mt-6 relative">
+        <div ref={mapContainerRef} style={{ height: '500px', width: '100%' }} className="rounded-lg border"></div>
       </div>
-      <div className="flex-1 p-4">
-        {/* Render the analytics dashboard with the POI data */}
+
+      <div className="mt-6">
         <AnalyticsDashboard poiData={poiData} />
       </div>
-    </>
+    </div>
   );
 };
 

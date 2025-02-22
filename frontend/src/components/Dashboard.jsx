@@ -81,7 +81,6 @@ const Dashboard = () => {
         const data = response.data;
 
         if (!data || data.length === 0) {
-          showAlert("No usage data available.", 'error')
           console.error("No usage data available.");
         }
 

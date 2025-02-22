@@ -3,8 +3,8 @@ const { Schema } = mongoose;
 
 const SubscriptionSchema = new Schema(
   {
-    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true, unique: true}, 
-    customer_id: { type: String, unique: true },
+    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true}, 
+    customer_id: { type: String, required: true},
     subscription_type: {
       type: String,
       enum: ["free", "pro", "premium"],
@@ -12,14 +12,16 @@ const SubscriptionSchema = new Schema(
     },
     start_date: { type: Date, required: true },
     end_date: { type: Date },
+    current_period_start: { type: Date, default: null},
+    current_period_end: { type: Date, default: null },
     status_type: {
       type: String,
-      enum: ["active", "expired", "canceled", "past_due"],
+      enum: ["active", "inactive", "expired", "canceled", "past_due", "trialing"],
       default: "active",
-      index:true
+      index: true
     },
     // Fields to match Stripe subscription events
-    stripeSubscriptionId: { type: String, unique: true }, // Stripe subscription ID
+    stripeSubscriptionId: { type: String, default: null}, // Stripe subscription ID
     cancelAtPeriodEnd: { type: Boolean, default: false }, // If subscription is set to cancel at period end
     lastPayment: { type: Date }, // Date of the last payment made
     canceledAt: { type: Date }, // If subscription was canceled, store cancellation date

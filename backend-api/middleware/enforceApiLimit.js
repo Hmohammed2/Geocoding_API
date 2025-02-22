@@ -27,22 +27,30 @@ const enforceApiLimit = async (req, res, next) => {
     // Count API usage
     const usageCount = await ApiUsage.countDocuments({
       api_key: apiKey,
-      timestamp: { $gte: new Date(subscription.start_date), $lte: new Date(subscription.end_date) },
+      timestamp: {
+        $gte: new Date(subscription.current_period_start * 1000),
+        $lte: new Date(subscription.current_period_end * 1000),
+      }
     });
 
-    // Define subscription limits
     const limits = {
+      trialing: 1000,
       free: 1000,
       pro: 50000,
       premium: 250000,
-    };
+    }
+
+    // Determine the subscription key to use. 
+    const subscriptionKey = subscription.status_type === "trialing"
+      ? "trialing"
+      : subscription.subscription_type;
 
     // Enforce the limit
-    if (usageCount >= limits[subscription.subscription_type]) {
+    if (usageCount >= limits[subscriptionKey]) {
       return res.status(429).json({ message: 'API limit exceeded' });
     }
 
-    // Add user and subscription details to the request object for downstream use (optional)
+    // Add user and subscription details to the request object for downstream use
     req.user = user;
     req.subscription = subscription;
 

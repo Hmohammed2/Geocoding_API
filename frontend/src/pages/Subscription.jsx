@@ -5,11 +5,14 @@ import { Helmet } from "react-helmet-async";
 import { useAuth } from "../components/contexts/AuthContext";
 
 const Subscription = () => {
-    const navigate = useNavigate()
-    const { user } = useAuth()
+    const navigate = useNavigate();
+    const { user } = useAuth();
 
     const handlePayment = async (subscriptionType) => {
-        if (!user) { navigate("/register") }
+        if (!user) { 
+            navigate("/register"); 
+            return;
+        }
 
         try {
             const response = await axios.post(
@@ -17,9 +20,9 @@ const Subscription = () => {
                 { userId: user.userId, subscriptionType }
             );
 
-            console.log("Response data:", response.data); // Debugging line
+            console.log("Response data:", response.data);
             if (response.data.url) {
-                window.location.href = response.data.url; // Redirect to Stripe checkout
+                window.location.href = response.data.url;
             } else {
                 console.log("No URL returned from server");
             }
@@ -67,6 +70,8 @@ const Subscription = () => {
             name: "Premium",
             description: "Great for scaling businesses and applications.",
             price: 69.99,
+            trial: true, // New property indicating a free trial
+            trialText: "7 Day Free Trial", // Text to be displayed as a badge
             features: [
                 "Up to 250,000 requests/month",
                 "Priority API response time",
@@ -81,6 +86,26 @@ const Subscription = () => {
             border: "border-2 border-blue-500",
             actionText: "Upgrade Now",
             subscriptionType: "premium",
+        },
+        {
+            name: "Enterprise",
+            description: "Tailored solutions for large-scale businesses with dedicated support and custom integrations.",
+            price: "Contact Sales",
+            features: [
+                "Customizable request limits (potentially unlimited)",
+                "Dedicated account manager",
+                "Priority API response time",
+                "24/7 premium support with phone assistance",
+                "Custom integrations & onboarding support",
+                "Advanced security & compliance features",
+                "Service Level Agreement (SLA) with uptime guarantee"
+            ],
+            bgColor: "bg-green-700",
+            hoverColor: "hover:bg-green-600",
+            textColor: "text-white",
+            border: "border-2 border-green-700",
+            actionText: "Contact Sales",
+            subscriptionType: "enterprise",
         },
     ];
 
@@ -102,7 +127,6 @@ const Subscription = () => {
             "No",
             "No",
             "No",
-            "No",
             "No"
         ],
         "Pro": [
@@ -110,31 +134,38 @@ const Subscription = () => {
             "Faster",
             "Email",
             "Yes",
-            "Yes",  // Access to batch geocoding
-            "No",   // No advanced analytics
-            "No",   // No customizable data sources
+            "Yes",
+            "No",
+            "No"
         ],
         "Premium": [
             "250,000",
             "Priority",
             "24/7 Email",
-            "Yes",  // Access to advanced geocoding features
-            "Yes",  // Access to batch geocoding
-            "Yes",  // Access to advanced analytics
-            "Yes",  // Customizable data sources
+            "Yes",
+            "Yes",
+            "Yes",
+            "Yes"
+        ],
+        "Enterprise": [
+            "Custom",
+            "Priority",
+            "Dedicated & 24/7 Premium",
+            "Yes",
+            "Yes",
+            "Yes",
+            "Yes"
         ]
     };
 
     const faqs = [
         {
             question: "Can I change my plan later?",
-            answer:
-                "Yes, you can upgrade or downgrade your plan at any time from your account settings.",
+            answer: "Yes, you can upgrade or downgrade your plan at any time from your account settings.",
         },
         {
             question: "What happens if I exceed my request limit?",
-            answer:
-                "If you exceed your request limit, your access will be temporarily paused until the next billing cycle or until you upgrade your plan.",
+            answer: "If you exceed your request limit, your access will be temporarily paused until the next billing cycle or until you upgrade your plan.",
         },
         {
             question: "Are there any hidden fees?",
@@ -142,13 +173,11 @@ const Subscription = () => {
         },
         {
             question: "Do you offer refunds?",
-            answer:
-                "We offer a 30-day money-back guarantee for first-time subscribers of the Pro and Premium plans.",
+            answer: "We offer a 30-day money-back guarantee for first-time subscribers of the Pro and Premium plans.",
         },
         {
             question: "How is support provided?",
-            answer:
-                "Support is provided based on your plan. Free users have access to community support, while Pro and Premium users have email support with faster response times.",
+            answer: "Support is provided based on your plan. Free users have access to community support, while Pro and Premium users have email support with faster response times.",
         },
     ];
 
@@ -158,132 +187,141 @@ const Subscription = () => {
         setOpenFAQ(openFAQ === index ? null : index);
     };
 
-    return (<>
-        {/* SEO Optimization */}
-        <Helmet>
-            <title>Subscription Plans - GeoCode API</title>
-            <meta name="description" content="Choose the right plan for your needs. Free, Pro, and Premium options available with advanced geolocation features." />
-            <meta name="keywords" content="geocode, API, subscription, pricing, location services" />
-            <meta property="og:title" content="GeoCode API Subscription Plans" />
-            <meta property="og:description" content="Flexible subscription plans to meet your geolocation needs." />
-            <meta property="og:image" content="https://simplegeoapi.com/og-image.jpg" />
-            <meta property="og:url" content="https://simplegeoapi.com/pricing" />
-            <link rel="canonical" href="https://simplegeoapi.com/pricing" />
-        </Helmet>
-        <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6">
-            <h1 className="text-gray-800 text-3xl py-10 font-bold">SimpleGeoAPI plans and pricing</h1>
-            {/* Plans */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mb-10">
-                {plans.map((plan, index) => (
-                    <div
-                        key={index}
-                        className={`bg-white rounded-lg shadow-lg p-6 ${plan.border}`}
-                    >
-                        <h3 className="text-lg font-bold text-gray-800">{plan.name}</h3>
-                        <p className="mt-2 text-gray-600">{plan.description}</p>
-                        <div className="mt-4">
-                            <p className="text-4xl font-bold text-gray-800">
-                                {plan.price === "Contact Us" ? plan.price : `£${plan.price}`}
-                            </p>
-                            {plan.price !== "Contact Us" && (
-                                <p className="text-sm text-gray-500">per month</p>
-                            )}
-                        </div>
-                        <ul className="mt-4 space-y-2">
-                            {plan.features.map((feature, featureIndex) => (
-                                <li key={featureIndex} className="flex items-center">
-                                    <svg
-                                        className="h-5 w-5 text-green-500"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M5 13l4 4L19 7"
-                                        />
-                                    </svg>
-                                    <span className="ml-2 text-gray-600">{feature}</span>
-                                </li>
-                            ))}
-                        </ul>
-                        <button
-                            className={`mt-6 w-full ${plan.bgColor} ${plan.textColor} py-2 px-4 rounded ${plan.hoverColor}`}
-                            onClick={() =>
-                                plan.subscriptionType === "free"
-                                    ? navigate("/register")
-                                    : handlePayment(plan.subscriptionType)
-                            }
+    return (
+        <>
+            <Helmet>
+                <title>Subscription Plans - GeoCode API</title>
+                <meta name="description" content="Choose the right plan for your needs. Free, Pro, Premium (with 7 Day Free Trial), and Enterprise options available with advanced geolocation features." />
+                <meta name="keywords" content="geocode, API, subscription, pricing, location services" />
+                <meta property="og:title" content="GeoCode API Subscription Plans" />
+                <meta property="og:description" content="Flexible subscription plans to meet your geolocation needs." />
+                <meta property="og:image" content="https://simplegeoapi.com/og-image.jpg" />
+                <meta property="og:url" content="https://simplegeoapi.com/pricing" />
+                <link rel="canonical" href="https://simplegeoapi.com/pricing" />
+            </Helmet>
+            <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6">
+                <h1 className="text-gray-800 text-3xl py-10 font-bold">SimpleGeoAPI Plans and Pricing</h1>
+                {/* Plans */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mb-10">
+                    {plans.map((plan, index) => (
+                        <div
+                            key={index}
+                            className={`relative bg-white rounded-lg shadow-lg p-6 ${plan.border}`}
                         >
-                            {plan.actionText}
-                        </button>
-                    </div>
-                ))}
-            </div>
-
-            {/* Comparison Table */}
-            <h1 className="text-gray-800 text-2xl py-10 font-bold">Plan Comparison</h1>
-            <div className="overflow-x-auto bg-white rounded-lg shadow-lg w-full max-w-7xl">
-                <table className="table-auto w-full border-collapse border border-gray-300">
-                    <thead>
-                        <tr>
-                            <th className="px-4 py-2 border border-gray-300 bg-gray-100">Benefit</th>
-                            {Object.keys(benefitsData).map((plan, index) => (
-                                <th
-                                    key={index}
-                                    className="px-4 py-2 border border-gray-300 bg-gray-100"
-                                >
-                                    {plan}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {benefitList.map((benefit, index) => (
-                            <tr key={index}>
-                                <td className="px-4 py-2 border border-gray-300">{benefit}</td>
-                                {Object.keys(benefitsData).map((plan, planIndex) => (
-                                    <td
-                                        key={planIndex}
-                                        className="px-4 py-2 border border-gray-300 text-center"
-                                    >
-                                        {benefitsData[plan][index]}
-                                    </td>
-                                ))}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            {/* FAQ Section */}
-            <h2 className="text-2xl font-bold text-gray-800 py-10">Frequently Asked Questions</h2>
-            <div className="bg-white rounded-lg shadow-lg p-6 max-w-7xl w-full">
-                <div className="space-y-4">
-                    {faqs.map((faq, index) => (
-                        <div key={index} className="border-b border-gray-300 pb-4">
-                            <button
-                                className="flex justify-between items-center w-full text-left focus:outline-none"
-                                onClick={() => toggleFAQ(index)}
-                            >
-                                <h3 className="text-lg font-semibold text-gray-700">
-                                    {faq.question}
-                                </h3>
-                                <span className="text-gray-600">
-                                    {openFAQ === index ? "-" : "+"}
-                                </span>
-                            </button>
-                            {openFAQ === index && (
-                                <p className="text-gray-600 mt-2">{faq.answer}</p>
+                            {/* Render trial badge if applicable */}
+                            {plan.trial && (
+                                <div className="absolute top-2 right-2 bg-yellow-400 text-black px-2 py-1 text-xs font-semibold rounded">
+                                    {plan.trialText}
+                                </div>
                             )}
+                            <h3 className="text-lg font-bold text-gray-800">{plan.name}</h3>
+                            <p className="mt-2 text-gray-600">{plan.description}</p>
+                            <div className="mt-4">
+                                <p className="text-4xl font-bold text-gray-800">
+                                    {typeof plan.price === "string" ? plan.price : `£${plan.price}`}
+                                </p>
+                                {typeof plan.price !== "string" && (
+                                    <p className="text-sm text-gray-500">per month</p>
+                                )}
+                            </div>
+                            <ul className="mt-4 space-y-2">
+                                {plan.features.map((feature, featureIndex) => (
+                                    <li key={featureIndex} className="flex items-center">
+                                        <svg
+                                            className="h-5 w-5 text-green-500"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="2"
+                                                d="M5 13l4 4L19 7"
+                                            />
+                                        </svg>
+                                        <span className="ml-2 text-gray-600">{feature}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <button
+                                className={`mt-6 w-full ${plan.bgColor} ${plan.textColor} py-2 px-4 rounded ${plan.hoverColor}`}
+                                onClick={() => {
+                                    if (plan.subscriptionType === "free") {
+                                        navigate("/register");
+                                    } else if (plan.subscriptionType === "enterprise") {
+                                        navigate("/contact-sales");
+                                    } else {
+                                        handlePayment(plan.subscriptionType);
+                                    }
+                                }}
+                            >
+                                {plan.actionText}
+                            </button>
                         </div>
                     ))}
                 </div>
+
+                <h1 className="text-gray-800 text-2xl py-10 font-bold">Plan Comparison</h1>
+                <div className="overflow-x-auto bg-white rounded-lg shadow-lg w-full max-w-7xl">
+                    <table className="table-auto w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr>
+                                <th className="px-4 py-2 border border-gray-300 bg-gray-100">Benefit</th>
+                                {Object.keys(benefitsData).map((plan, index) => (
+                                    <th
+                                        key={index}
+                                        className="px-4 py-2 border border-gray-300 bg-gray-100"
+                                    >
+                                        {plan}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {benefitList.map((benefit, index) => (
+                                <tr key={index}>
+                                    <td className="px-4 py-2 border border-gray-300">{benefit}</td>
+                                    {Object.keys(benefitsData).map((plan, planIndex) => (
+                                        <td
+                                            key={planIndex}
+                                            className="px-4 py-2 border border-gray-300 text-center"
+                                        >
+                                            {benefitsData[plan][index]}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2 className="text-2xl font-bold text-gray-800 py-10">Frequently Asked Questions</h2>
+                <div className="bg-white rounded-lg shadow-lg p-6 max-w-7xl w-full">
+                    <div className="space-y-4">
+                        {faqs.map((faq, index) => (
+                            <div key={index} className="border-b border-gray-300 pb-4">
+                                <button
+                                    className="flex justify-between items-center w-full text-left focus:outline-none"
+                                    onClick={() => toggleFAQ(index)}
+                                >
+                                    <h3 className="text-lg font-semibold text-gray-700">
+                                        {faq.question}
+                                    </h3>
+                                    <span className="text-gray-600">
+                                        {openFAQ === index ? "-" : "+"}
+                                    </span>
+                                </button>
+                                {openFAQ === index && (
+                                    <p className="text-gray-600 mt-2">{faq.answer}</p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
-        </div>
-    </>
+        </>
     );
 };
 
