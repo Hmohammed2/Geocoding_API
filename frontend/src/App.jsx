@@ -22,10 +22,10 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    // Set a timer to open the modal after 30 seconds
+    // Set a timer to open the modal after 60 seconds
     const timer = setTimeout(() => {
       setIsModalOpen(true);
-    }, 30000); // 30000ms = 30 seconds
+    }, 60000); // 60000ms = 60 seconds
 
     // Cleanup timer if the component unmounts
     return () => clearTimeout(timer);

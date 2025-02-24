@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "./contexts/AuthContext";
+import PriceDistributionHistogram from "./analytics/PriceDistributionHistogram";
 
-// Function to convert an array of objects to CSV format
+// Function to convert an array of objects to CSV format, now including "Address"
 const convertToCSV = (data) => {
-    const headers = ["Price", "Type", "Bedrooms", "Latitude", "Longitude", "Portal"];
+    const headers = ["Price", "Type", "Bedrooms", "Latitude", "Longitude", "Portal", "Address"];
     const rows = data.map(property => [
         property.price,
         property.type,
@@ -12,6 +13,7 @@ const convertToCSV = (data) => {
         property.lat,
         property.lng,
         property.portal,
+        property.address || "N/A"
     ]);
 
     // Add headers to the CSV data
@@ -43,7 +45,7 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
     const mapInstanceRef = useRef(null);
     const markersRef = useRef([]);
     const [properties, setProperties] = useState([]);
-    const { user } = useAuth()
+    const { user } = useAuth();
 
     // Load Google Maps API
     const loadGoogleMaps = () => {
@@ -69,7 +71,24 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
         });
     };
 
-    // Place markers on the map
+    // A helper function that returns a Promise to geocode a property and add an address field
+    const geocodeProperty = (property) => {
+        return new Promise((resolve) => {
+            const geocoder = new window.google.maps.Geocoder();
+            const latLng = { lat: parseFloat(property.lat), lng: parseFloat(property.lng) };
+
+            geocoder.geocode({ location: latLng }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    property.address = results[0].formatted_address;
+                } else {
+                    property.address = "Address not found";
+                }
+                resolve(property);
+            });
+        });
+    };
+
+    // Place markers on the map (using the property.address field)
     const placeMarkers = (propertyList) => {
         if (!mapInstanceRef.current) return;
 
@@ -77,21 +96,28 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
         markersRef.current = [];
 
         propertyList.forEach(property => {
+            const latLng = { lat: parseFloat(property.lat), lng: parseFloat(property.lng) };
+
             const marker = new window.google.maps.Marker({
-                position: { lat: parseFloat(property.lat), lng: parseFloat(property.lng) },
+                position: latLng,
                 map: mapInstanceRef.current,
                 title: `£${property.price.toLocaleString()}`,
             });
 
             const infoWindow = new window.google.maps.InfoWindow({
                 content: `
-          <div class="text-sm">
-            <h4 class="font-semibold">£${property.price.toLocaleString()}</h4>
-            <p>Type: ${property.type}</p>
-            <p>Bedrooms: ${property.bedrooms}</p>
-            <p><a href="https://${property.portal}" target="_blank" class="text-blue-500">View on ${property.portal}</a></p>
-          </div>
-        `,
+                    <div class="text-sm">
+                        <p>Address: ${property.address}</p>
+                        <h4 class="font-semibold">£${property.price.toLocaleString()}</h4>
+                        <p>Type: ${property.type}</p>
+                        <p>Bedrooms: ${property.bedrooms}</p>
+                        <p>
+                          <a href="https://${property.portal}" target="_blank" class="text-blue-500">
+                            View on ${property.portal}
+                          </a>
+                        </p>
+                    </div>
+                `,
             });
 
             marker.addListener("click", () => {
@@ -118,6 +144,7 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
         mapInstanceRef.current.fitBounds(bounds);
     };
 
+    // Fetch property data and then geocode each property to add an address
     const fetchPropertyData = async () => {
         try {
             const response = await axios.get(
@@ -130,8 +157,11 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
             );
 
             if (response.data.status === "success") {
-                setProperties(response.data.data.raw_data);
-                placeMarkers(response.data.data.raw_data);
+                const rawData = response.data.data.raw_data;
+                // Geocode all properties to add the formatted address
+                const propertiesWithAddress = await Promise.all(rawData.map(geocodeProperty));
+                setProperties(propertiesWithAddress);
+                placeMarkers(propertiesWithAddress);
             }
         } catch (error) {
             console.error("Error fetching property data:", error);
@@ -162,6 +192,10 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
                 ref={mapContainerRef}
                 className="w-full h-96 rounded-lg shadow-md"
             ></div>
+            <div>
+                <h2 className="font-semibold">Price Distribution</h2>
+                <PriceDistributionHistogram properties={properties} />
+            </div>
         </div>
     );
 };
