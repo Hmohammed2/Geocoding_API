@@ -22,20 +22,24 @@ const enforceMonthlyLimit = async (req, res, next) => {
     const apiKey = req.headers["x-api-key"];
     if (!apiKey) return res.status(401).json({ message: "API key is required" });
 
-    // Fetch user and active subscription in parallel
-    const [user, subscription] = await Promise.all([
-      User.findOne({ apiKey }).select("_id apiKey"),
-      Subscription.findOne({ user_id: user?._id, status_type: "active" }).select(
-        "status_type subscription_type current_period_start current_period_end"
-      ),
-    ]);
-
+    const user = await User.findOne({ apiKey }).select("_id apiKey");
     if (!user) return res.status(403).json({ message: "Invalid API key" });
+
+    console.log(user)
+    // Now fetch the subscription; include both active and trialing subscriptions
+    const subscription = await Subscription.findOne({
+      user_id: user.id,
+      status_type: { $in: ["active", "trialing"] }
+    }).select("status_type subscription_type current_period_start current_period_end");
+
+    console.log(user)
+
     if (!subscription) return res.status(403).json({ message: "No active subscription found" });
 
     const subscriptionKey = subscription.status_type === "trialing" ? "trialing" : subscription.subscription_type;
     const limit = LIMITS[subscriptionKey] || LIMITS["free"];
 
+    console.log(user)
     // Fetch API usage count within subscription period
     const usageCount = await ApiUsage.countDocuments({
       api_key: apiKey,
@@ -68,28 +72,30 @@ const enforceDailyLimit = async (req, res, next) => {
     const apiKey = req.headers["x-api-key"];
     if (!apiKey) return res.status(401).json({ message: "API key is required" });
 
-    // Fetch user and active subscription in parallel
-    const [user, subscription] = await Promise.all([
-      User.findOne({ apiKey }).select("_id apiKey"),
-      Subscription.findOne({ user_id: user?._id, status_type: "active" }).select(
-        "status_type subscription_type"
-      ),
-    ]);
-
+    // Fetch the user first
+    const user = await User.findOne({ apiKey }).select("_id apiKey");
     if (!user) return res.status(403).json({ message: "Invalid API key" });
-    if (!subscription) return res.status(403).json({ message: "No active subscription found" });
 
-    // Determine daily limit based on subscription type
-    const dailyLimit = DAILY_LIMITS[subscription.subscription_type] || 0;
+    // Now fetch the subscription; include both active and trialing subscriptions
+    const subscription = await Subscription.findOne({
+      user_id: user._id,
+      status_type: { $in: ["active", "trialing"] }
+    }).select("status_type subscription_type");
+    if (!subscription)
+      return res.status(403).json({ message: "No active subscription found" });
 
-    if (!dailyLimit) {
-      // If user is not a free or pro tier, do not enforce daily limits
-      return next();
-    }
+    // Determine daily limit based on subscription type; default to 'free' if not found.
+    // Optionally, if trialing users should have the free limit, you can do:
+    const dailyLimit =
+      DAILY_LIMITS[
+        subscription.status_type === "trialing"
+          ? "free"
+          : subscription.subscription_type
+      ] || DAILY_LIMITS["free"];
 
-    // Get start of today (midnight UTC)
+    // Get start of today (midnight)
     const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0); // Reset time to midnight (00:00:00) of today UTC
+    todayStart.setHours(0, 0, 0, 0);
 
     // Fetch API usage count for today
     const dailyUsageCount = await ApiUsage.countDocuments({
@@ -98,7 +104,9 @@ const enforceDailyLimit = async (req, res, next) => {
     });
 
     if (dailyUsageCount >= dailyLimit) {
-      return res.status(429).json({ message: `Daily API limit of ${dailyLimit} exceeded. Try again tomorrow.` });
+      return res
+        .status(429)
+        .json({ message: `Daily API limit of ${dailyLimit} exceeded. Try again tomorrow.` });
     }
 
     // Proceed if the daily limit hasn't been exceeded

@@ -45,6 +45,7 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
     const mapInstanceRef = useRef(null);
     const markersRef = useRef([]);
     const [properties, setProperties] = useState([]);
+    const [data, setData] = useState([])
     const { user } = useAuth();
 
     // Load Google Maps API
@@ -158,8 +159,10 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
 
             if (response.data.status === "success") {
                 const rawData = response.data.data.raw_data;
+                const data = response.data.data
                 // Geocode all properties to add the formatted address
                 const propertiesWithAddress = await Promise.all(rawData.map(geocodeProperty));
+                setData(data)
                 setProperties(propertiesWithAddress);
                 placeMarkers(propertiesWithAddress);
             }
@@ -171,6 +174,10 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
     useEffect(() => {
         loadGoogleMaps();
     }, []); // This effect runs once to load the Google Maps API
+
+    function formattedGBP(number=0, locale = "en-GB", currency = "GBP") {
+        return number.toLocaleString(locale, { style: "currency", currency });
+    }
 
     return (
         <div className="space-y-4">
@@ -188,10 +195,22 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
                     Export CSV
                 </button>
             </div>
-            <div
-                ref={mapContainerRef}
-                className="w-full h-96 rounded-lg shadow-md"
-            ></div>
+            <div className="mt-6 flex">
+                {/* Sidebar */}
+                <div className="w-64 bg-blue-600 text-white p-4 rounded-l-lg">
+                    <ul className="mt-4">
+                        <li>No of Properties: {properties.length}</li>
+                        <li>Average Price: {formattedGBP(data.average)}</li>
+                        <li>Radius: {radius}m</li>
+                    </ul>
+                </div>
+                <div className="flex-1 ml-4">
+                    <div
+                        ref={mapContainerRef}
+                        className="w-full h-96 rounded-lg shadow-md"
+                    ></div>
+                </div>
+            </div>
             <div>
                 <h2 className="font-semibold">Price Distribution</h2>
                 <PriceDistributionHistogram properties={properties} />

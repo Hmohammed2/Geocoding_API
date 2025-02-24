@@ -366,13 +366,25 @@ const MapComponent = () => {
           </button>
         </div>
       </form>
-
-      <h2 className="mt-6 text-lg text-gray-700">Total POIs Found: {poiData.length}</h2>
-
-      <div className="mt-6 relative">
-        <div ref={mapContainerRef} style={{ height: '500px', width: '100%' }} className="rounded-lg border"></div>
+      {/* Flex container for Map and Sidebar */}
+      <div className="mt-6 flex">
+        {/* Purple Sidebar */}
+        <div className="w-64 bg-blue-600 text-white p-4 rounded-l-lg">
+          <ul className="mt-4">
+            <li>Total POIs: {poiData.length}</li>
+            <li>Current Category: {businessCategory}</li>
+            <li>Radius: {radius}m</li>
+          </ul>
+        </div>
+        {/* Map Container */}
+        <div className="flex-1 ml-4">
+          <div
+            ref={mapContainerRef}
+            style={{ height: '500px', width: '100%' }}
+            className="rounded-lg border"
+          ></div>
+        </div>
       </div>
-
       <div className="mt-6">
         <AnalyticsDashboard poiData={poiData} />
       </div>
