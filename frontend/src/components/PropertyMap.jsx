@@ -175,42 +175,55 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
         loadGoogleMaps();
     }, []); // This effect runs once to load the Google Maps API
 
-    function formattedGBP(number=0, locale = "en-GB", currency = "GBP") {
+    function formattedGBP(number = 0, locale = "en-GB", currency = "GBP") {
         return number.toLocaleString(locale, { style: "currency", currency });
     }
 
     return (
         <div className="space-y-4">
-            <div className="flex space-x-4">
+            {/* Buttons */}
+            <div className="flex flex-col md:flex-row gap-3 md:space-x-4 w-full">
                 <button
                     onClick={fetchPropertyData}
-                    className="px-6 py-3 mt-4 text-lg font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
+                    type="submit"
+                    className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition duration-300 w-full md:w-auto"
                 >
-                    Update Property Data
+                    Update Property Prices
                 </button>
                 <button
+                    type="button"
                     onClick={() => downloadCSV(properties)}
-                    className="px-6 py-3 mt-4 text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 transition duration-300 w-full md:w-auto"
                 >
                     Export CSV
                 </button>
             </div>
-            <div className="mt-6 flex">
-                {/* Sidebar */}
-                <div className="w-64 bg-blue-600 text-white p-4 rounded-l-lg">
+            {/* Flex container for Sidebar and Map */}
+            < div className="mt-6 flex flex-col md:flex-row" >
+                {/* Mobile Sidebar: Horizontal Bar */}
+                <div className="block md:hidden w-full bg-blue-600 text-white p-2 flex flex-row justify-between items-center text-sm overflow-x-auto">
+                    <span className="whitespace-nowrap">🏠 Properties: {properties.length}</span>
+                    <span className="whitespace-nowrap">💷 Avg Price: {formattedGBP(data.average)}</span>
+                    <span className="whitespace-nowrap">📍 Radius: {radius}m</span>
+                </div>
+                {/* Desktop Sidebar: vertical bar on the left */}
+                < div className="hidden md:flex flex-col w-64 bg-blue-600 text-white p-4 rounded-l-lg" >
                     <ul className="mt-4">
                         <li>No of Properties: {properties.length}</li>
                         <li>Average Price: {formattedGBP(data.average)}</li>
                         <li>Radius: {radius}m</li>
                     </ul>
-                </div>
-                <div className="flex-1 ml-4">
+                </div >
+
+                {/* Map Container */}
+                < div className="flex-1" >
                     <div
                         ref={mapContainerRef}
-                        className="w-full h-96 rounded-lg shadow-md"
+                        style={{ height: '500px', width: '100%' }}
+                        className="rounded-lg border"
                     ></div>
-                </div>
-            </div>
+                </div >
+            </div >
             <div>
                 <h2 className="font-semibold">Price Distribution</h2>
                 <PriceDistributionHistogram properties={properties} />

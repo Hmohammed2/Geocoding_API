@@ -350,45 +350,53 @@ const MapComponent = () => {
         </div>
 
         {/* Buttons */}
-        <div className="space-x-4">
+        <div className="flex flex-col md:flex-row gap-3 md:space-x-4 w-full">
           <button
             type="submit"
-            className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition duration-300"
+            className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition duration-300 w-full md:w-auto"
           >
             Update Map & Fetch POIs
           </button>
           <button
             type="button"
             onClick={exportCSV}
-            className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 transition duration-300"
+            className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 transition duration-300 w-full md:w-auto"
           >
             Export CSV
           </button>
         </div>
-      </form>
-      {/* Flex container for Map and Sidebar */}
-      <div className="mt-6 flex">
-        {/* Purple Sidebar */}
-        <div className="w-64 bg-blue-600 text-white p-4 rounded-l-lg">
+      </form >
+      {/* Flex container for Sidebar and Map */}
+      < div className="mt-6 flex flex-col md:flex-row" >
+        {/* Mobile Sidebar: horizontal bar */}
+        <div className="block md:hidden w-full bg-blue-600 text-white p-2 flex flex-row justify-between items-center text-sm overflow-x-auto">
+          <span className="whitespace-nowrap">📌 POIs: {poiData.length}</span>
+          <span className="whitespace-nowrap">📂 Category: {businessCategory}</span>
+          <span className="whitespace-nowrap">📍 Radius: {radius}m</span>
+        </div>
+
+        {/* Desktop Sidebar: vertical bar on the left */}
+        < div className="hidden md:flex flex-col w-64 bg-blue-600 text-white p-4 rounded-l-lg" >
           <ul className="mt-4">
             <li>Total POIs: {poiData.length}</li>
             <li>Current Category: {businessCategory}</li>
             <li>Radius: {radius}m</li>
           </ul>
-        </div>
+        </div >
+
         {/* Map Container */}
-        <div className="flex-1 ml-4">
+        < div className="flex-1" >
           <div
             ref={mapContainerRef}
             style={{ height: '500px', width: '100%' }}
             className="rounded-lg border"
           ></div>
-        </div>
-      </div>
+        </div >
+      </div >
       <div className="mt-6">
         <AnalyticsDashboard poiData={poiData} />
       </div>
-    </div>
+    </div >
   );
 };
 

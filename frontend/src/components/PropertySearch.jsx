@@ -20,12 +20,12 @@ const PropertySearch = () => {
           placeholder="Enter postcode"
           value={postcode}
           onChange={(e) => setPostcode(e.target.value)}
-          className="p-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="p-4 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <select
           value={bedrooms}
           onChange={(e) => setBedrooms(e.target.value)}
-          className="p-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="p-4 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="1">1 Bedroom</option>
           <option value="2">2 Bedrooms</option>

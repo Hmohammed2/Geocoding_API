@@ -4,7 +4,6 @@ import axios from "axios";
 import Alert from "./Alert";
 import { useAlert } from "./contexts/AlertContext";
 import { useNavigate } from "react-router-dom";
-
 /**
  * Settings component allows users to update profile information, manage subscriptions,
  * view API keys, and delete their account.
@@ -78,11 +77,6 @@ const Settings = () => {
     }
   };
 
-  // Fetch decrypted API key when button is clicked
-  const handleShowApiKey = () => {
-    setShowApiKey(prevState => !prevState); // Toggle the current state
-  };
-
   if (loading) {
     return <div className="text-center mt-8">Loading...</div>;
   }
@@ -123,15 +117,6 @@ const Settings = () => {
         </div>
         <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">Save Changes</button>
       </form>
-
-      {/* API Key Section */}
-      <div className="mt-8">
-        <h3 className="text-lg font-bold mb-2 text-gray-800">API Key</h3>
-        <div className="relative">
-          <input type={showApiKey ? "text" : "password"} value={user.apiKey} readOnly className="w-full px-4 py-2 border border-gray-300 rounded-md" />
-          <button onClick={handleShowApiKey} className="mt-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">{showApiKey ? "Hide API Key" : "Show API Key"}</button>
-        </div>
-      </div>
 
       {/* Delete Account */}
       <div className="mt-8">

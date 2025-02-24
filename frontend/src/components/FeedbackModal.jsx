@@ -23,7 +23,7 @@ const FeedbackModal = ({ onClose, onSubmit }) => {
     };
     return (
         <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-60 flex justify-center items-center z-50">
-            <div className="bg-white p-8 rounded-lg max-w-lg w-full shadow-lg transform transition-all duration-300 scale-100 hover:scale-105">
+            <div className="bg-white p-8 rounded-lg max-w-lg w-96 shadow-lg transform transition-all duration-300 scale-100 hover:scale-105">
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">We value your feedback!</h2>
                 <p className="text-lg text-gray-600 mb-6">Your experience is important to us. Please provide your feedback below.</p>
                 <textarea

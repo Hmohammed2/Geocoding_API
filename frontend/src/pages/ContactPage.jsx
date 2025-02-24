@@ -55,7 +55,7 @@ const ContactPage = () => {
         <link rel="canonical" href="https://yourwebsite.com/contact" />
       </Helmet>
       <div className="min-h-screen bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full p-10 md:p-16 space-y-8 transform transition-all duration-300 hover:scale-105">
+        <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-96 p-10 md:p-16 space-y-8 transform transition-all duration-300 hover:scale-105">
           <h1 className="text-4xl font-extrabold text-gray-800 text-center mb-6 tracking-tight">
             Contact Us
           </h1>
