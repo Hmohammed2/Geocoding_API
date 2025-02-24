@@ -126,7 +126,7 @@ Content-Type: application/json
           </div>
         </header>
 
-        <main className="w-96 mx-auto px-4 py-12">
+        <main className="max-w-7xl mx-auto px-4 py-12">
           <section className="mb-12">
             <h2 className="text-3xl font-semibold mb-4">API Overview</h2>
             <p className="text-lg">
