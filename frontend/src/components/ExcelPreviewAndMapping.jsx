@@ -128,7 +128,7 @@ const ExcelPreviewAndMapping = () => {
           <h3 className="text-xl font-semibold mt-6">Select Columns for Geocoding</h3>
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
             <div>
-              <label className="block font-medium">Address</label>
+              <label className="block font-medium">Address*</label>
               <select
                 value={selectedMapping.address}
                 onChange={(e) => handleMappingChange("address", e.target.value)}
@@ -143,7 +143,7 @@ const ExcelPreviewAndMapping = () => {
               </select>
             </div>
             <div>
-              <label className="block font-medium">Suburb</label>
+              <label className="block font-medium">Suburb/Locality/Town</label>
               <select
                 value={selectedMapping.suburb}
                 onChange={(e) => handleMappingChange("suburb", e.target.value)}
@@ -158,7 +158,7 @@ const ExcelPreviewAndMapping = () => {
               </select>
             </div>
             <div>
-              <label className="block font-medium">State</label>
+              <label className="block font-medium">State/City</label>
               <select
                 value={selectedMapping.state}
                 onChange={(e) => handleMappingChange("state", e.target.value)}
@@ -173,7 +173,7 @@ const ExcelPreviewAndMapping = () => {
               </select>
             </div>
             <div>
-              <label className="block font-medium">Postcode</label>
+              <label className="block font-medium">Postcode/ZIP code</label>
               <select
                 value={selectedMapping.postcode}
                 onChange={(e) => handleMappingChange("postcode", e.target.value)}

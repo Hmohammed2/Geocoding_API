@@ -115,7 +115,7 @@ const CSVPreviewAndMapping = () => {
 
           <h3 className="text-lg font-semibold mt-6">Select Columns for Geocoding</h3>
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-            {["address", "suburb", "state", "postcode"].map((key) => (
+            {["address*", "suburb/locality/town", "state/city", "postcode/ZIP code"].map((key) => (
               <div key={key}>
                 <label className="block font-medium capitalize">{key}</label>
                 <select
