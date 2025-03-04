@@ -251,7 +251,7 @@ const Subscription = () => {
                                     if (plan.subscriptionType === "free") {
                                         navigate("/register");
                                     } else if (plan.subscriptionType === "enterprise") {
-                                        navigate("/contact-sales");
+                                        navigate("/contact");
                                     } else {
                                         handlePayment(plan.subscriptionType);
                                     }

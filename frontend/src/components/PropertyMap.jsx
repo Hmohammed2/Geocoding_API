@@ -201,7 +201,7 @@ const PropertyMap = ({ postcode, bedrooms, radius, priceRange }) => {
             {/* Flex container for Sidebar and Map */}
             < div className="mt-6 flex flex-col md:flex-row" >
                 {/* Mobile Sidebar: Horizontal Bar */}
-                <div className="block md:hidden w-full bg-blue-600 text-white p-2 flex flex-row justify-between items-center text-sm overflow-x-auto">
+                <div className="md:hidden w-full bg-blue-600 text-white p-2 flex flex-row justify-between items-center text-sm overflow-x-auto">
                     <span className="whitespace-nowrap">🏠 Properties: {properties.length}</span>
                     <span className="whitespace-nowrap">💷 Avg Price: {formattedGBP(data.average)}</span>
                     <span className="whitespace-nowrap">📍 Radius: {radius}m</span>

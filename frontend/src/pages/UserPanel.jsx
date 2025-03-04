@@ -23,7 +23,7 @@ const UserPanel = () => {
   // Check if the user has a premium subscription
   const isPremium = effectiveSubscription?.subscription_type === "premium";
 
-  // Helper function to get page title and description
+  // Helper function to get page title and description. SEO optimization
   const getMetaInfo = (tab) => {
     switch (tab) {
       case "dashboard":

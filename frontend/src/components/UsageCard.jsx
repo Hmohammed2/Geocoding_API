@@ -6,8 +6,6 @@ import React from "react";
  * @param {string} value: value shown in currency within the usage card
  * @param {string} description: description of the usage card
  */
-
-
 const UsageCard = ({ title, value, description }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md text-center">
